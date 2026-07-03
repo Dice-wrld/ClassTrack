@@ -95,4 +95,4 @@ Typography: [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) + [
 
 ## Licence
 
-Personal use. Not for redistribution or commercial use without permission.
+MIT — free to use, modify, and distribute. See [LICENSE](./LICENSE) for details.
