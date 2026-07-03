@@ -1,0 +1,3486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#070f0d">
+<title>ClassTrack — Your Academic Planner</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root {
+  --bg:        #070f0d;
+  --bg-2:      #0a1614;
+  --surface:   #0e1a18;
+  --surface-2: #142621;
+  --surface-3: #1c352e;
+  --border:    #1c352e;
+  --text:      #eef5f1;
+  --text-2:    #82a89c;
+  --teal:      #00e6b8;
+  --teal-dim:  rgba(0,230,184,0.12);
+  --teal-glow: rgba(0,230,184,0.28);
+  --gold:      #e8b339;
+  --gold-dim:  rgba(232,179,57,0.13);
+  --red:       #e3486b;
+  --red-dim:   rgba(227,72,107,0.13);
+  --orange:    #f2994a;
+  --r: 16px; --r-sm: 12px; --r-xs: 8px;
+  --shadow: 0 20px 48px rgba(0,0,0,0.55);
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --f-display: 'Space Grotesk', 'IBM Plex Sans', sans-serif;
+  --f-body: 'IBM Plex Sans', -apple-system, sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { scroll-behavior:smooth; }
+body {
+  font-family: var(--f-body);
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(0,230,184,0.07), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(232,179,57,0.05), transparent 55%),
+    var(--bg);
+  color: var(--text);
+  min-height: 100vh; overflow-x: hidden; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+/* Ambient weave texture — the signature motif, used at low opacity so it reads
+   as material rather than decoration. Echoes both circuit traces and kente strip-weave. */
+.weave-bg {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.05;
+  background-image: repeating-linear-gradient(115deg, var(--teal) 0px, var(--teal) 1px, transparent 1px, transparent 26px),
+                     repeating-linear-gradient(25deg, var(--gold) 0px, var(--gold) 1px, transparent 1px, transparent 26px);
+  mask-image: radial-gradient(ellipse 800px 500px at 20% 0%, black, transparent 70%);
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--surface-3); border-radius:4px; }
+
+/* ── LAYOUT ── */
+.wrap { max-width: 620px; margin:0 auto; padding:20px 16px 110px; position:relative; z-index:1; }
+
+/* ── HEADER ── */
+.header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
+.header-left { display:flex; flex-direction:column; gap:2px; }
+.greeting { font-size:.75rem; color:var(--text-2); letter-spacing:.5px; text-transform:uppercase; font-weight:600; }
+.app-name { font-family:var(--f-display); font-size:1.65rem; font-weight:700; letter-spacing:-0.5px; color:var(--text); display:flex; align-items:center; gap:9px; }
+.app-name b { color:var(--teal); font-weight:700; }
+.meta-badge {
+  display:inline-flex; align-items:center; gap:5px; margin-top:6px;
+  padding:4px 10px; background:var(--teal-dim);
+  border:1px solid rgba(0,230,184,.2); border-radius:20px;
+  font-family:var(--f-mono); font-size:.66rem; font-weight:500; color:var(--teal); text-transform:uppercase; letter-spacing:.5px;
+}
+.header-right { display:flex; gap:8px; align-items:center; }
+.icon-btn {
+  width:40px; height:40px; border-radius:50%;
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--text-2); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .2s var(--ease); flex-shrink:0;
+}
+.icon-btn:hover { background:var(--surface-2); color:var(--text); }
+.icon-btn.active { border-color:var(--teal); color:var(--teal); }
+
+/* ── RING WIDGET ── */
+.next-widget {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r); padding:20px; margin-bottom:18px;
+  display:flex; align-items:center; gap:20px; position:relative; overflow:hidden;
+}
+.next-widget::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, var(--teal), var(--gold));
+}
+.ring-wrap { position:relative; flex-shrink:0; }
+.ring-svg { width:70px; height:70px; transform:rotate(-90deg); }
+.ring-track { fill:none; stroke:var(--surface-3); stroke-width:5; }
+.ring-fill { fill:none; stroke-width:5; stroke-linecap:round; transition:stroke-dashoffset 1s var(--ease); }
+.ring-center {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  flex-direction:column; font-size:.58rem; color:var(--text-2); font-weight:700; text-transform:uppercase; letter-spacing:.3px; transform:none;
+}
+.ring-center strong { font-family:var(--f-mono); font-size:1rem; color:var(--text); font-weight:600; transform:rotate(0deg); display:block; }
+.widget-info { flex:1; min-width:0; }
+.widget-label { font-family:var(--f-mono); font-size:.66rem; color:var(--text-2); text-transform:uppercase; letter-spacing:1.5px; font-weight:500; margin-bottom:5px; }
+.widget-course { font-size:1.05rem; font-weight:700; line-height:1.3; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.widget-meta { font-size:.82rem; color:var(--text-2); margin-bottom:10px; }
+.widget-countdown { font-family:var(--f-mono); font-size:1.35rem; font-weight:600; color:var(--teal); font-variant-numeric:tabular-nums; letter-spacing:-.5px; }
+.widget-actions { display:flex; gap:6px; margin-top:10px; }
+.w-btn {
+  flex:1; padding:8px 0; border-radius:var(--r-xs); font-size:.78rem;
+  font-weight:700; cursor:pointer; transition:all .2s var(--ease); border:1px solid;
+}
+.w-btn.attend { background:var(--teal-dim); border-color:rgba(0,230,184,.3); color:var(--teal); }
+.w-btn.attend:hover { background:rgba(0,230,184,.22); }
+.w-btn.skip { background:var(--red-dim); border-color:rgba(227,72,107,.3); color:var(--red); }
+.w-btn.skip:hover { background:rgba(227,72,107,.2); }
+
+/* ── STATS ── */
+.stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:18px; }
+.stat { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-sm); padding:14px 10px; text-align:center; }
+.stat-val { font-family:var(--f-mono); font-size:1.5rem; font-weight:600; color:var(--teal); }
+.stat-lbl { font-size:.68rem; color:var(--text-2); text-transform:uppercase; letter-spacing:.5px; margin-top:2px; font-weight:600; }
+
+/* ── NAV TABS (bottom view switcher) ── */
+.view-bar {
+  position:fixed; bottom:0; left:0; right:0; z-index:40;
+  background:var(--surface); border-top:1px solid var(--border);
+  display:flex; padding:6px 12px 10px; gap:4px;
+  max-width:620px; margin:0 auto;
+}
+/* centering hack for fixed */
+.view-bar { left:50%; transform:translateX(-50%); width:100%; max-width:620px; }
+.v-tab {
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:8px 4px; border-radius:var(--r-xs); background:transparent; border:none;
+  color:var(--text-2); font-size:.68rem; font-weight:700; cursor:pointer;
+  transition:all .2s var(--ease); text-transform:uppercase; letter-spacing:.4px;
+}
+.v-tab svg { width:20px; height:20px; }
+.v-tab.active { background:var(--teal-dim); color:var(--teal); }
+.v-tab .cnt {
+  font-size:.6rem; padding:1px 5px; border-radius:8px;
+  background:var(--red); color:white; display:none; font-weight:800;
+}
+.v-tab .cnt.show { display:block; }
+
+/* ── DAY TABS ── */
+.day-strip {
+  display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:16px;
+  scrollbar-width:none;
+}
+.day-strip::-webkit-scrollbar { display:none; }
+.d-tab {
+  flex:1; min-width:52px; padding:10px 6px; border-radius:var(--r-sm);
+  background:var(--surface); border:1px solid transparent;
+  color:var(--text-2); text-align:center; cursor:pointer; transition:all .2s var(--ease);
+  position:relative;
+}
+.d-tab .d-name { font-size:.62rem; font-weight:600; opacity:.8; display:block; margin-bottom:1px; }
+.d-tab .d-letter { font-size:.95rem; font-weight:800; display:block; }
+.d-tab .d-count {
+  position:absolute; top:4px; right:4px; width:14px; height:14px; border-radius:50%;
+  background:var(--teal); color:var(--bg); font-size:.55rem; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+}
+.d-tab:hover { border-color:var(--border); color:var(--text); }
+.d-tab.active { background:var(--teal-dim); border-color:rgba(0,230,184,.3); color:var(--teal); }
+.d-tab.today { border-color:rgba(0,230,184,.2); }
+.d-tab.today .d-name::after { content:'●'; margin-left:2px; font-size:.45rem; vertical-align:middle; color:var(--teal); }
+
+/* ── SCHEDULE HEADER ── */
+.sched-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.sched-hdr h2 { font-family:var(--f-display); font-size:1.05rem; font-weight:700; }
+.sched-hdr span { font-size:.78rem; color:var(--text-2); }
+
+/* ── CLASS CARDS ── */
+.class-list { display:flex; flex-direction:column; gap:10px; }
+.c-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r); padding:16px 16px 16px 20px;
+  position:relative; cursor:pointer; transition:all .2s var(--ease); overflow:hidden;
+}
+.c-card::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+  background:var(--card-color, var(--teal)); border-radius:var(--r) 0 0 var(--r);
+}
+.c-card:hover { border-color:var(--surface-3); transform:translateY(-1px); box-shadow:0 8px 24px rgba(0,0,0,.4); }
+.c-card.live { border-color:rgba(0,230,184,.25); background:rgba(0,230,184,.04); }
+.c-card.attended { opacity:.6; }
+.c-card.attended::after {
+  content:'✓ Attended'; position:absolute; top:10px; right:10px;
+  font-size:.6rem; font-weight:800; color:var(--teal); letter-spacing:.3px; text-transform:uppercase;
+}
+.c-card.moved-note::after {
+  content:'MOVED'; position:absolute; top:10px; right:10px;
+  font-size:.6rem; font-weight:800; color:var(--gold); letter-spacing:.5px;
+  background:var(--gold-dim); padding:2px 7px; border-radius:5px;
+  border:1px solid rgba(232,179,57,.25);
+}
+.card-time { font-family:var(--f-mono); font-size:.76rem; font-weight:500; color:var(--text-2); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.live-dot { width:7px; height:7px; background:var(--teal); border-radius:50%; box-shadow:0 0 0 3px var(--teal-dim); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(.85);opacity:.7} }
+.card-tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:6px; }
+.c-type { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.4px; padding:2px 7px; border-radius:5px; background:var(--surface-3); color:var(--text-2); }
+.c-code { font-family:var(--f-mono); font-size:.66rem; font-weight:600; padding:2px 8px; border-radius:5px; background:rgba(255,255,255,.05); color:var(--card-color, var(--teal)); }
+.c-mat-badge {
+  font-size:.65rem; font-weight:700; padding:2px 8px; border-radius:5px;
+  background:var(--gold-dim); color:var(--gold); border:1px solid rgba(232,179,57,.25);
+  cursor:pointer; transition:all .2s; display:inline-flex; align-items:center; gap:2px;
+}
+.c-mat-badge:hover { background:rgba(232,179,57,.22); }
+.card-name { font-size:1rem; font-weight:700; line-height:1.3; margin-bottom:8px; }
+.card-meta { display:flex; flex-direction:column; gap:3px; font-size:.8rem; color:var(--text-2); }
+.card-meta span { display:flex; align-items:center; gap:5px; }
+.card-actions { position:absolute; bottom:12px; right:12px; display:flex; gap:5px; opacity:0; transition:opacity .2s; }
+.c-card:hover .card-actions { opacity:1; }
+.c-btn {
+  width:30px; height:30px; border-radius:7px; border:none;
+  background:var(--surface-2); color:var(--text-2);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .2s; font-size:.75rem;
+}
+.c-btn:hover { background:var(--surface-3); color:var(--text); }
+.c-btn.del:hover { background:var(--red-dim); color:var(--red); }
+.c-btn.chk:hover { background:var(--teal-dim); color:var(--teal); }
+
+/* ── EMPTY STATE ── */
+.empty { text-align:center; padding:50px 20px; color:var(--text-2); }
+.empty svg { width:52px; height:52px; margin-bottom:12px; opacity:.25; }
+.empty p { font-size:.9rem; }
+.empty small { font-size:.75rem; opacity:.7; margin-top:4px; display:block; }
+
+/* ── WEEK VIEW ── */
+#weekView { display:none; }
+#weekView.on { display:block; }
+.week-scroll { overflow-x:auto; border-radius:var(--r); border:1px solid var(--border); }
+.week-table { width:100%; border-collapse:collapse; font-size:.72rem; }
+.week-table th {
+  padding:8px 6px; background:var(--surface); color:var(--text-2);
+  font-weight:700; text-align:center; border-bottom:1px solid var(--border);
+  white-space:nowrap; font-size:.68rem; text-transform:uppercase; letter-spacing:.5px;
+}
+.week-table th.td { color:var(--teal); }
+.week-table td {
+  padding:4px 3px; border-bottom:1px solid rgba(30,51,54,.6);
+  vertical-align:top; min-width:56px;
+}
+.week-table td.time-col { font-family:var(--f-mono); color:var(--text-2); font-size:.63rem; font-weight:500; text-align:right; padding-right:6px; white-space:nowrap; }
+.week-table td.today-cell { background:rgba(0,230,184,.03); }
+.wk-cls {
+  background:rgba(0,230,184,.1); border-left:2px solid var(--card-color,var(--teal));
+  border-radius:5px; padding:3px 5px; margin-bottom:2px; cursor:pointer;
+  transition:all .15s; font-size:.62rem;
+}
+.wk-cls:hover { opacity:.8; }
+.wk-time { font-family:var(--f-mono); color:var(--text-2); font-size:.58rem; font-weight:500; }
+.wk-code { font-family:var(--f-mono); font-weight:600; color:var(--card-color,var(--teal)); font-size:.63rem; }
+
+/* ── DEADLINES VIEW ── */
+#dlView { display:none; }
+#dlView.on { display:block; }
+.dl-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.dl-header h2 { font-family:var(--f-display); font-size:1.05rem; font-weight:700; }
+.add-dl-btn {
+  padding:8px 14px; background:var(--teal-dim); border:1px solid rgba(0,230,184,.3);
+  border-radius:var(--r-xs); color:var(--teal); font-size:.78rem; font-weight:700;
+  cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:5px;
+}
+.add-dl-btn:hover { background:rgba(0,230,184,.2); }
+.dl-list { display:flex; flex-direction:column; gap:8px; }
+.dl-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:14px 14px 14px 18px; display:flex; gap:12px; align-items:flex-start;
+  cursor:pointer; transition:all .2s; position:relative; overflow:hidden;
+}
+.dl-card::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+  background:var(--dl-color, var(--teal)); border-radius:var(--r-sm) 0 0 var(--r-sm);
+}
+.dl-card.done { opacity:.5; }
+.dl-icon { font-size:1.3rem; flex-shrink:0; margin-top:1px; }
+.dl-body { flex:1; min-width:0; }
+.dl-title { font-size:.95rem; font-weight:700; margin-bottom:4px; }
+.dl-meta { display:flex; gap:8px; flex-wrap:wrap; font-size:.75rem; color:var(--text-2); }
+.dl-badge { padding:2px 7px; border-radius:5px; font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; }
+.dl-badge.urgent { background:var(--red-dim); color:var(--red); }
+.dl-badge.soon { background:var(--gold-dim); color:var(--gold); }
+.dl-badge.later { background:var(--surface-3); color:var(--text-2); }
+.dl-badge.done { background:var(--teal-dim); color:var(--teal); }
+.dl-actions { display:flex; gap:4px; flex-shrink:0; }
+
+/* ── FAB ── */
+.fab {
+  position:fixed; bottom:70px; right:20px; width:54px; height:54px; border-radius:50%;
+  background:var(--teal); border:none; color:var(--bg); font-size:1.6rem;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; box-shadow:0 6px 20px var(--teal-glow);
+  transition:all .2s var(--ease); z-index:50;
+}
+.fab:hover { transform:scale(1.06); box-shadow:0 8px 28px var(--teal-glow); }
+.fab:active { transform:scale(.94); }
+
+/* ── MODALS ── */
+.overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px);
+  display:none; align-items:flex-end; justify-content:center; z-index:100;
+  opacity:0; transition:opacity .25s;
+}
+.overlay.open { display:flex; opacity:1; }
+.modal {
+  width:100%; max-width:620px; max-height:92vh; overflow-y:auto;
+  background:var(--surface); border-top:1px solid var(--border);
+  border-radius:var(--r) var(--r) 0 0; padding:24px;
+  transform:translateY(100%); transition:transform .3s var(--ease);
+}
+.overlay.open .modal { transform:translateY(0); }
+.modal-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
+.modal-hdr h2 { font-family:var(--f-display); font-size:1.15rem; font-weight:700; }
+.modal-close {
+  width:34px; height:34px; border-radius:50%; border:none;
+  background:var(--surface-2); color:var(--text-2); cursor:pointer; font-size:1.1rem;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .2s;
+}
+.modal-close:hover { background:var(--surface-3); color:var(--text); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.fgroup { margin-bottom:14px; }
+.fgroup label { display:block; font-size:.72rem; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.fgroup input, .fgroup select {
+  width:100%; padding:12px 14px; background:var(--bg);
+  border:1px solid var(--border); border-radius:var(--r-xs);
+  color:var(--text); font-size:.95rem; font-family:inherit; transition:all .2s;
+}
+.fgroup input:focus, .fgroup select:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px var(--teal-dim); }
+.fgroup select option { background:var(--bg); }
+.color-row { display:flex; gap:8px; flex-wrap:wrap; }
+.col-opt { width:30px; height:30px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:all .2s; }
+.col-opt.sel { border-color:white; transform:scale(1.15); }
+.btn-primary {
+  width:100%; padding:14px; background:var(--teal); border:none;
+  border-radius:var(--r-xs); color:var(--bg); font-size:.95rem; font-weight:800;
+  cursor:pointer; transition:all .2s; margin-top:6px;
+}
+.btn-primary:hover { opacity:.9; transform:translateY(-1px); }
+.btn-danger {
+  width:100%; padding:12px; background:transparent; border:1px solid var(--red);
+  border-radius:var(--r-xs); color:var(--red); font-size:.9rem; font-weight:700;
+  cursor:pointer; transition:all .2s; margin-top:8px;
+}
+.btn-danger:hover { background:var(--red-dim); }
+.err-msg { font-size:.73rem; color:var(--red); margin-top:4px; display:none; }
+.err-msg.show { display:block; }
+
+/* ── SETTINGS MODAL ── */
+.setting-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 0; border-bottom:1px solid var(--border);
+}
+.setting-row:last-child { border-bottom:none; }
+.setting-label { font-size:.88rem; font-weight:600; }
+.setting-desc { font-size:.73rem; color:var(--text-2); margin-top:2px; }
+.toggle {
+  width:46px; height:26px; border-radius:13px; background:var(--surface-3);
+  border:none; cursor:pointer; position:relative; transition:background .25s; flex-shrink:0;
+}
+.toggle::after {
+  content:''; position:absolute; top:3px; left:3px; width:20px; height:20px;
+  border-radius:50%; background:white; transition:transform .25s; box-shadow:0 1px 4px rgba(0,0,0,.4);
+}
+.toggle.on { background:var(--teal); }
+.toggle.on::after { transform:translateX(20px); }
+
+/* ── CONFIRM ── */
+.confirm-box {
+  background:var(--surface-2); border:1px solid var(--border);
+  border-radius:var(--r); padding:24px; width:calc(100% - 40px); max-width:340px;
+  transform:scale(.92); transition:transform .2s;
+}
+.confirm-overlay.open .confirm-box { transform:scale(1); }
+.confirm-overlay { align-items:center; justify-content:center; }
+.confirm-title { font-size:1rem; font-weight:800; margin-bottom:8px; }
+.confirm-msg { font-size:.85rem; color:var(--text-2); margin-bottom:20px; line-height:1.5; }
+.confirm-btns { display:flex; gap:8px; }
+.conf-cancel, .conf-ok {
+  flex:1; padding:11px; border-radius:var(--r-xs); font-size:.88rem; font-weight:700; cursor:pointer; transition:all .2s;
+}
+.conf-cancel { background:var(--surface-3); border:none; color:var(--text-2); }
+.conf-cancel:hover { color:var(--text); }
+.conf-ok { background:var(--red); border:none; color:white; }
+.conf-ok:hover { opacity:.85; }
+.conf-ok.conf-ok-neutral { background:var(--teal); color:var(--bg); }
+
+/* ── TOAST ── */
+.toast-wrap { position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:300; display:flex; flex-direction:column; gap:6px; pointer-events:none; min-width:220px; }
+.toast {
+  background:var(--surface-2); border:1px solid var(--border);
+  border-radius:var(--r-xs); padding:11px 18px; font-size:.85rem; font-weight:600;
+  box-shadow:var(--shadow); animation:tIn .25s ease, tOut .25s ease 2.7s forwards;
+  display:flex; align-items:center; gap:8px; white-space:nowrap;
+}
+@keyframes tIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes tOut { from{opacity:1} to{opacity:0;transform:translateY(-8px)} }
+
+/* ── ONBOARDING ── */
+.ob-choice {
+  display:flex; align-items:flex-start; gap:10px; padding:12px 14px;
+  background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-xs);
+  transition:all .2s;
+}
+.ob-choice:has(input:checked), .ob-choice-selected {
+  border-color:rgba(0,230,184,.4); background:var(--teal-dim);
+}
+.ob-choice input { margin-top:3px; flex-shrink:0; }
+#materialsView { padding-bottom:4px; }
+.mat-toolbar { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+.mat-title { font-family:var(--f-display); font-size:1.1rem; font-weight:700; }
+.mat-sub { font-size:.73rem; color:var(--text-2); margin-top:2px; }
+.mat-upload-btn {
+  display:flex; align-items:center; gap:5px; padding:9px 14px;
+  background:var(--teal); border:none; border-radius:var(--r-xs);
+  color:var(--bg); font-size:.78rem; font-weight:800; cursor:pointer; transition:all .2s;
+}
+.mat-upload-btn:hover { opacity:.88; }
+.mat-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+.mat-select {
+  flex:1; min-width:120px; padding:9px 10px; background:var(--surface);
+  border:1px solid var(--border); border-radius:var(--r-xs);
+  color:var(--text); font-size:.8rem; cursor:pointer;
+}
+.mat-select:focus { outline:none; border-color:var(--teal); }
+.mat-select option { background:var(--bg); }
+.mat-search {
+  flex:2; min-width:140px; padding:9px 12px; background:var(--surface);
+  border:1px solid var(--border); border-radius:var(--r-xs);
+  color:var(--text); font-size:.8rem;
+}
+.mat-search:focus { outline:none; border-color:var(--teal); }
+.week-chips { display:flex; gap:6px; overflow-x:auto; padding-bottom:10px; scrollbar-width:none; margin-bottom:14px; }
+.week-chips::-webkit-scrollbar { display:none; }
+.wk-chip {
+  flex-shrink:0; padding:5px 12px; border-radius:20px;
+  background:var(--surface); border:1px solid var(--border);
+  font-size:.72rem; font-weight:700; color:var(--text-2); cursor:pointer; transition:all .2s;
+  white-space:nowrap;
+}
+.wk-chip:hover { border-color:var(--teal); color:var(--teal); }
+.wk-chip.active { background:var(--teal-dim); border-color:rgba(0,230,184,.3); color:var(--teal); }
+.mat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; }
+.mat-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r-sm); padding:14px; cursor:pointer;
+  transition:all .2s; position:relative; overflow:hidden;
+  display:flex; flex-direction:column; gap:8px;
+}
+.mat-card:hover { border-color:var(--surface-3); transform:translateY(-1px); box-shadow:0 8px 24px rgba(0,0,0,.4); }
+.mat-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--mc, var(--teal));
+}
+.mat-type-icon { font-size:1.8rem; line-height:1; }
+.mat-card-title { font-size:.82rem; font-weight:700; line-height:1.3; color:var(--text); }
+.mat-card-course { font-size:.7rem; font-weight:700; color:var(--teal); text-transform:uppercase; letter-spacing:.4px; }
+.mat-card-meta { display:flex; align-items:center; justify-content:space-between; gap:6px; margin-top:auto; }
+.mat-badge {
+  font-size:.6rem; font-weight:800; padding:2px 7px; border-radius:5px;
+  background:var(--surface-3); color:var(--text-2); text-transform:capitalize;
+}
+.mat-card-del {
+  opacity:0; width:22px; height:22px; border-radius:5px; border:none;
+  background:var(--red-dim); color:var(--red); cursor:pointer; font-size:.75rem;
+  display:flex; align-items:center; justify-content:center; transition:all .2s;
+}
+.mat-card:hover .mat-card-del { opacity:1; }
+
+/* ── UPLOAD DROP ZONE ── */
+.drop-zone {
+  border:2px dashed var(--border); border-radius:var(--r-sm); padding:28px 20px;
+  text-align:center; cursor:pointer; transition:all .2s; margin-bottom:14px;
+}
+.drop-zone:hover, .drop-zone.over { border-color:var(--teal); background:var(--teal-dim); }
+.drop-label { font-size:.88rem; font-weight:600; color:var(--text-2); }
+.drop-browse { color:var(--teal); text-decoration:underline; cursor:pointer; }
+.drop-hint { font-size:.72rem; color:var(--text-2); opacity:.7; margin-top:4px; }
+.file-preview {
+  display:flex; align-items:center; gap:10px; padding:12px;
+  background:var(--bg); border:1px solid var(--border); border-radius:var(--r-xs);
+  margin-bottom:14px;
+}
+.fp-icon { font-size:1.5rem; }
+.fp-info { flex:1; min-width:0; }
+.fp-name { font-size:.82rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fp-size { font-size:.7rem; color:var(--text-2); margin-top:2px; }
+.fp-clear { background:none; border:none; color:var(--text-2); font-size:1.1rem; cursor:pointer; padding:4px; }
+.fp-clear:hover { color:var(--red); }
+
+/* ── COURSES ── */
+.course-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.course-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:16px; cursor:pointer; transition:all .2s; position:relative; overflow:hidden;
+}
+.course-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--cc,var(--teal)); }
+.course-card:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,0,0,.4); }
+.cc-code { font-family:var(--f-mono); font-size:.68rem; font-weight:600; color:var(--cc,var(--teal)); margin-bottom:5px; }
+.cc-name { font-size:.88rem; font-weight:700; line-height:1.3; margin-bottom:10px; }
+.cc-bar-wrap { background:var(--surface-3); border-radius:4px; height:5px; margin-bottom:8px; overflow:hidden; }
+.cc-bar { height:100%; border-radius:4px; background:var(--cc,var(--teal)); transition:width .6s var(--ease); }
+.cc-meta { font-size:.7rem; color:var(--text-2); display:flex; justify-content:space-between; }
+.cc-actions { position:absolute; top:10px; right:10px; display:flex; gap:4px; opacity:0; transition:opacity .2s; }
+.course-card:hover .cc-actions { opacity:1; }
+
+/* ── COURSE DETAIL ── */
+.cd-stat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+.cd-stat { background:var(--surface-3); border-radius:var(--r-xs); padding:12px; text-align:center; }
+.cd-stat-val { font-family:var(--f-mono); font-size:1.2rem; font-weight:600; color:var(--teal); }
+.cd-stat-lbl { font-size:.62rem; color:var(--text-2); text-transform:uppercase; letter-spacing:.4px; margin-top:2px; }
+.cd-section { margin-bottom:16px; }
+.cd-section h4 { font-size:.72rem; color:var(--text-2); text-transform:uppercase; letter-spacing:.8px; font-weight:600; margin-bottom:8px; }
+.cd-row { display:flex; align-items:center; justify-content:space-between; font-size:.85rem; padding:7px 0; border-bottom:1px solid var(--border); }
+.cd-row:last-child { border-bottom:none; }
+
+/* ── POMODORO ── */
+.pomo-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r);
+  padding:22px; margin-bottom:18px; text-align:center;
+  position:relative; overflow:hidden;
+}
+.pomo-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--teal),var(--gold)); }
+.pomo-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.pomo-label { font-family:var(--f-mono); font-size:.7rem; font-weight:600; color:var(--text-2); text-transform:uppercase; letter-spacing:2px; }
+.pomo-ring-wrap { position:relative; display:inline-block; margin-bottom:16px; }
+.pomo-ring { width:120px; height:120px; }
+.pomo-time { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--f-mono); font-size:1.5rem; font-weight:600; color:var(--text); }
+.pomo-btns { display:flex; gap:8px; justify-content:center; margin-bottom:12px; }
+.pomo-btn { padding:10px 22px; border-radius:var(--r-xs); font-size:.88rem; font-weight:700; cursor:pointer; border:none; background:var(--teal); color:var(--bg); transition:all .2s; }
+.pomo-btn:hover { opacity:.85; }
+.pomo-btn-ghost { background:var(--surface-2); color:var(--text-2); border:1px solid var(--border) !important; }
+.pomo-modes { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+.pomo-mode { padding:5px 12px; border-radius:20px; font-size:.72rem; font-weight:700; border:1px solid var(--border); background:transparent; color:var(--text-2); cursor:pointer; transition:all .2s; }
+.pomo-mode.active { background:var(--teal-dim); border-color:rgba(0,230,184,.3); color:var(--teal); }
+
+/* ── STUDY SESSION CARDS ── */
+.study-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:14px 14px 14px 18px; margin-bottom:8px; position:relative; overflow:hidden;
+  display:flex; gap:10px; align-items:flex-start;
+}
+.study-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--teal); }
+.study-meta { display:flex; gap:8px; flex-wrap:wrap; font-size:.75rem; color:var(--text-2); margin-top:4px; }
+.focus-bar-wrap { flex:1; min-width:0; }
+.focus-bar-bg { background:var(--surface-3); border-radius:3px; height:4px; margin-top:6px; }
+.focus-bar { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--teal),var(--gold)); }
+
+/* ── EXAM PLANNER CARDS ── */
+.exam-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:16px; margin-bottom:10px; position:relative; overflow:hidden; cursor:pointer;
+}
+.exam-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--gold); border-radius:var(--r-sm) 0 0 var(--r-sm); }
+.exam-card:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(0,0,0,.3); }
+.exam-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+.exam-title { font-weight:700; font-size:.95rem; }
+.exam-badge { font-family:var(--f-mono); font-size:.65rem; font-weight:600; padding:3px 8px; border-radius:5px; }
+.exam-diff-easy { background:rgba(61,163,93,.15); color:#3da35d; }
+.exam-diff-moderate { background:var(--gold-dim); color:var(--gold); }
+.exam-diff-hard { background:var(--red-dim); color:var(--red); }
+.exam-progress-row { display:flex; align-items:center; gap:10px; }
+.exam-prog-label { font-family:var(--f-mono); font-size:.7rem; color:var(--text-2); white-space:nowrap; }
+.exam-prog-bar { flex:1; background:var(--surface-3); border-radius:4px; height:6px; }
+.exam-prog-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--gold),var(--teal)); transition:width .5s; }
+.exam-prog-pct { font-family:var(--f-mono); font-size:.7rem; color:var(--teal); min-width:34px; text-align:right; }
+
+/* ── NOTES ── */
+.note-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:14px; margin-bottom:8px; cursor:pointer; transition:all .2s; position:relative;
+}
+.note-card:hover { border-color:var(--surface-3); transform:translateY(-1px); }
+.note-card.pinned::after { content:'📌'; position:absolute; top:10px; right:12px; font-size:.9rem; }
+.note-title { font-weight:700; font-size:.9rem; margin-bottom:4px; padding-right:24px; }
+.note-preview { font-size:.78rem; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px; }
+.note-meta { font-size:.68rem; color:var(--text-2); display:flex; gap:8px; font-family:var(--f-mono); }
+
+/* ── MORE TABS ── */
+.more-tabs { display:flex; gap:6px; margin-bottom:4px; }
+.more-tab {
+  padding:8px 16px; border-radius:20px; font-size:.78rem; font-weight:700;
+  background:var(--surface); border:1px solid var(--border); color:var(--text-2);
+  cursor:pointer; transition:all .2s;
+}
+.more-tab.active { background:var(--teal-dim); border-color:rgba(0,230,184,.3); color:var(--teal); }
+
+/* ── GLOBAL SEARCH ── */
+.search-bar-wrap { position:relative; margin-bottom:14px; }
+.search-bar {
+  width:100%; padding:11px 14px 11px 40px; background:var(--surface);
+  border:1px solid var(--border); border-radius:var(--r-sm);
+  color:var(--text); font-size:.9rem; font-family:var(--f-body);
+  transition:all .2s;
+}
+.search-bar:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px var(--teal-dim); }
+.search-bar-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-2); pointer-events:none; }
+.search-results { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-sm); overflow:hidden; }
+.search-result-item { padding:12px 14px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .15s; display:flex; align-items:center; gap:10px; }
+.search-result-item:last-child { border-bottom:none; }
+.search-result-item:hover { background:var(--surface-2); }
+.sr-icon { font-size:1.1rem; flex-shrink:0; }
+.sr-title { font-size:.88rem; font-weight:700; }
+.sr-meta { font-size:.72rem; color:var(--text-2); }
+
+@media(min-width:580px){
+  .modal { border-radius:var(--r); margin:40px; }
+  .overlay { align-items:center; }
+  .overlay .modal { transform:scale(.94); }
+  .overlay.open .modal { transform:scale(1); }
+  .view-bar { border-radius:var(--r) var(--r) 0 0; }
+  .mat-grid { grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); }
+  .course-grid { grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); }
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+<div class="weave-bg" aria-hidden="true"></div>
+
+<div class="wrap">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <span class="greeting" id="greeting">Good morning</span>
+      <div class="app-name">
+        <svg width="34" height="34" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0">
+          <defs>
+            <linearGradient id="hexFill" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#102923"/><stop offset="1" stop-color="#0a1614"/>
+            </linearGradient>
+            <clipPath id="hexClip"><path d="M20 1.5 L36.5 11 V29 L20 38.5 L3.5 29 V11 Z"/></clipPath>
+          </defs>
+          <g stroke="#1c352e" stroke-width="1.6" stroke-linecap="round">
+            <path d="M20 1.5 V0"/><path d="M36.5 11 L37.9 10.2"/><path d="M36.5 29 L37.9 29.8"/>
+            <path d="M20 38.5 V40"/><path d="M3.5 29 L2.1 29.8"/><path d="M3.5 11 L2.1 10.2"/>
+          </g>
+          <path d="M20 1.5 L36.5 11 V29 L20 38.5 L3.5 29 V11 Z" fill="url(#hexFill)" stroke="#00e6b8" stroke-width="1.4"/>
+          <g clip-path="url(#hexClip)" opacity="0.16" stroke="#00e6b8" stroke-width="0.8">
+            <path d="M-4 8 L24 36"/><path d="M2 2 L30 30"/><path d="M10 -2 L38 26"/>
+            <path d="M-4 30 L16 10" stroke="#e8b339"/><path d="M6 36 L28 14" stroke="#e8b339"/><path d="M16 38 L36 18" stroke="#e8b339"/>
+          </g>
+          <path d="M14.5 13.5 C10 13.5 10 26.5 14.5 26.5" fill="none" stroke="#00e6b8" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M16.5 13.5 H26" fill="none" stroke="#e8b339" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M21 13.5 V26.5" fill="none" stroke="#e8b339" stroke-width="2.4" stroke-linecap="round"/>
+          <circle cx="29" cy="24.5" r="2.1" fill="#00e6b8"/>
+        </svg>
+        <span>Class<b>Track</b></span>
+      </div>
+      <div class="meta-badge" id="metaBadge">
+        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
+        <span id="metaBadgeText">Your Academic Planner</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="notifyBtn" title="Toggle reminders" aria-label="Toggle class reminders">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </button>
+      <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Open settings">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- NEXT CLASS WIDGET -->
+  <div class="next-widget" id="nextWidget">
+    <div class="ring-wrap">
+      <svg class="ring-svg" viewBox="0 0 70 70">
+        <defs>
+          <linearGradient id="ringGrad" x1="0" y1="0" x2="70" y2="70" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#00e6b8"/>
+            <stop offset="1" stop-color="#e8b339"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-track" cx="35" cy="35" r="30"/>
+        <circle class="ring-fill" cx="35" cy="35" r="30" id="ringFill" stroke="url(#ringGrad)" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+      </svg>
+      <div class="ring-center">
+        <strong id="ringPct">--</strong>
+        <span>today</span>
+      </div>
+    </div>
+    <div class="widget-info">
+      <div class="widget-label">Next Class</div>
+      <div class="widget-course" id="wCourse">Loading…</div>
+      <div class="widget-meta" id="wMeta"></div>
+      <div class="widget-countdown" id="wCountdown"></div>
+      <div class="widget-actions" id="wActions" style="display:none">
+        <button class="w-btn attend" id="wAttend">✓ Attended</button>
+        <button class="w-btn skip" id="wSkip">✕ Skip</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOBAL SEARCH -->
+  <div class="search-bar-wrap" id="searchWrap">
+    <svg class="search-bar-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="search" class="search-bar" id="globalSearch" placeholder="Search courses, deadlines, notes, materials… (⌘K)" aria-label="Global search">
+  </div>
+  <div class="search-results" id="searchResults" style="display:none;margin-bottom:14px"></div>
+
+  <!-- STATS -->
+  <div class="stats" style="grid-template-columns:repeat(4,1fr)">
+    <div class="stat"><div class="stat-val" id="sTotalClasses">0</div><div class="stat-lbl">Classes</div></div>
+    <div class="stat"><div class="stat-val" id="sAttendedToday">0</div><div class="stat-lbl">Attended</div></div>
+    <div class="stat"><div class="stat-val" id="sDueSoon">0</div><div class="stat-lbl">Due Soon</div></div>
+    <div class="stat"><div class="stat-val" id="sStudyHrs">0h</div><div class="stat-lbl">Study</div></div>
+  </div>
+
+  <!-- DAY VIEW -->
+  <div id="dayView">
+    <div class="day-strip" id="dayStrip"></div>
+    <div class="sched-hdr">
+      <h2 id="schedTitle">Schedule</h2>
+      <span id="dateStr"></span>
+    </div>
+    <div class="class-list" id="classList"></div>
+  </div>
+
+  <!-- DEADLINES VIEW -->
+  <div id="dlView">
+    <div class="dl-header">
+      <h2>Deadlines <span id="dlCount" style="color:var(--teal);"></span></h2>
+      <button class="add-dl-btn" id="addDlBtn">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Add
+      </button>
+    </div>
+    <div class="dl-list" id="dlList"></div>
+  </div>
+
+  <!-- COURSES VIEW -->
+  <div id="coursesView" style="display:none">
+    <div class="mat-toolbar">
+      <div><h2 class="mat-title">Courses</h2><p class="mat-sub">Your L300 modules this semester</p></div>
+      <button class="mat-upload-btn" id="openAddCourseBtn" aria-label="Add course">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add
+      </button>
+    </div>
+    <div id="courseGrid" class="course-grid"></div>
+  </div>
+
+  <!-- STUDY VIEW -->
+  <div id="studyView" style="display:none">
+    <div class="mat-toolbar">
+      <div><h2 class="mat-title">Study</h2><p class="mat-sub">Sessions &amp; Pomodoro</p></div>
+      <button class="mat-upload-btn" id="openAddStudyBtn" aria-label="Log study session">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Log
+      </button>
+    </div>
+    <!-- Pomodoro widget -->
+    <div class="pomo-card" id="pomoCard">
+      <div class="pomo-header">
+        <span class="pomo-label" id="pomoLabel">FOCUS</span>
+        <select id="pomoCourseSel" class="mat-select" style="max-width:160px;font-size:.78rem;padding:5px 8px"></select>
+      </div>
+      <div class="pomo-ring-wrap">
+        <svg class="pomo-ring" viewBox="0 0 120 120">
+          <defs><linearGradient id="pomoGrad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#00e6b8"/><stop offset="1" stop-color="#e8b339"/>
+          </linearGradient></defs>
+          <circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface-3)" stroke-width="7"/>
+          <circle cx="60" cy="60" r="52" fill="none" stroke="url(#pomoGrad)" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="326.7" id="pomoRingFill" stroke-dashoffset="0" style="transform:rotate(-90deg);transform-origin:60px 60px;transition:stroke-dashoffset .5s"/>
+        </svg>
+        <div class="pomo-time" id="pomoTime">25:00</div>
+      </div>
+      <div class="pomo-btns">
+        <button class="pomo-btn" id="pomoBtnStart">▶ Start</button>
+        <button class="pomo-btn pomo-btn-ghost" id="pomoBtnReset">↺ Reset</button>
+      </div>
+      <div class="pomo-modes">
+        <button class="pomo-mode active" data-mins="25" id="modeWork">Work 25m</button>
+        <button class="pomo-mode" data-mins="5" id="modeShort">Break 5m</button>
+        <button class="pomo-mode" data-mins="15" id="modeLong">Long 15m</button>
+      </div>
+    </div>
+    <!-- Session log -->
+    <div class="sched-hdr" style="margin-top:18px"><h2>Session Log</h2></div>
+    <div id="studyList" class="dl-list"></div>
+  </div>
+
+  <!-- DEADLINES + EXAMS view (combined Tasks) -->
+  <div id="dlView">
+    <div class="dl-header">
+      <h2>Tasks &amp; Exams <span id="dlCount" style="color:var(--teal);"></span></h2>
+      <div style="display:flex;gap:6px">
+        <button class="add-dl-btn" id="addExamBtn" style="background:var(--gold-dim);border-color:rgba(232,179,57,.3);color:var(--gold)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Exam
+        </button>
+        <button class="add-dl-btn" id="addDlBtn">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Task
+        </button>
+      </div>
+    </div>
+    <div class="dl-list" id="dlList"></div>
+  </div>
+
+  <!-- MORE VIEW (week + notes) -->
+  <div id="moreView" style="display:none">
+    <div class="more-tabs">
+      <button class="more-tab active" data-sub="week">Week View</button>
+      <button class="more-tab" data-sub="notes">Notes</button>
+      <button class="more-tab" data-sub="exams">Exam Planner</button>
+    </div>
+    <!-- Week sub -->
+    <div id="sub-week">
+      <div class="week-scroll" style="margin-top:12px">
+        <table class="week-table"><tbody id="weekBody"></tbody></table>
+      </div>
+    </div>
+    <!-- Notes sub -->
+    <div id="sub-notes" style="display:none">
+      <div class="mat-toolbar" style="margin-top:12px">
+        <div><h2 class="mat-title">Notes</h2><p class="mat-sub">Quick notes per class</p></div>
+        <button class="mat-upload-btn" id="openAddNoteBtn">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New
+        </button>
+      </div>
+      <div class="mat-filters">
+        <select id="noteCourseFilter" class="mat-select"></select>
+        <input type="search" id="noteSearch" class="mat-search" placeholder="Search notes…">
+      </div>
+      <div id="noteList" class="dl-list"></div>
+    </div>
+    <!-- Exam Planner sub -->
+    <div id="sub-exams" style="display:none">
+      <div class="mat-toolbar" style="margin-top:12px">
+        <div><h2 class="mat-title">Exam Planner</h2><p class="mat-sub">Track revision readiness</p></div>
+        <button class="mat-upload-btn" id="openAddExamBtn2">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add Exam
+        </button>
+      </div>
+      <div id="examPlannerList" class="dl-list"></div>
+    </div>
+  </div>
+</div><!-- /wrap -->
+
+<!-- COURSE MODAL -->
+<div class="overlay" id="courseOverlay" role="dialog" aria-modal="true" aria-label="Add or edit course">
+  <div class="modal">
+    <div class="modal-hdr"><h2 id="courseModalTitle">Add Course</h2><button class="modal-close" id="courseClose" aria-label="Close">&times;</button></div>
+    <div class="form-row">
+      <div class="fgroup"><label>Code</label><input type="text" id="c-code" placeholder="CSSD 314"><div class="err-msg" id="err-c-code">Required</div></div>
+      <div class="fgroup"><label>Credits</label><input type="number" id="c-credits" placeholder="3" min="1" max="12" value="3"></div>
+    </div>
+    <div class="fgroup"><label>Course Name</label><input type="text" id="c-name" placeholder="System Access and Control"><div class="err-msg" id="err-c-name">Required</div></div>
+    <div class="fgroup"><label>Instructor</label><input type="text" id="c-instructor" placeholder="Mr. Oppong Kyeremanteng"></div>
+    <div class="fgroup"><label>Venue</label><input type="text" id="c-venue" placeholder="SVF 4 B"></div>
+    <div class="fgroup"><label>Attendance Target (%)</label><input type="number" id="c-target" placeholder="75" min="1" max="100" value="75"></div>
+    <div class="fgroup"><label>Notes</label><input type="text" id="c-notes" placeholder="Any extra info…"></div>
+    <div class="fgroup"><label>Colour</label><div class="color-row" id="coursePicker"></div></div>
+    <button class="btn-primary" id="courseSubmit">Add Course</button>
+    <button class="btn-danger" id="courseDelete" style="display:none">Delete Course</button>
+  </div>
+</div>
+
+<!-- STUDY SESSION MODAL -->
+<div class="overlay" id="studyOverlay" role="dialog" aria-modal="true" aria-label="Log study session">
+  <div class="modal">
+    <div class="modal-hdr"><h2 id="studyModalTitle">Log Study Session</h2><button class="modal-close" id="studyClose" aria-label="Close">&times;</button></div>
+    <div class="fgroup"><label>Title</label><input type="text" id="st-title" placeholder="e.g. CSSD 314 Revision"><div class="err-msg" id="err-st-title">Required</div></div>
+    <div class="form-row">
+      <div class="fgroup"><label>Course</label><select id="st-course"><option value="">— none —</option></select></div>
+      <div class="fgroup"><label>Date</label><input type="date" id="st-date"><div class="err-msg" id="err-st-date">Required</div></div>
+    </div>
+    <div class="form-row">
+      <div class="fgroup"><label>Planned (min)</label><input type="number" id="st-planned" placeholder="50" min="5" max="600" value="50"></div>
+      <div class="fgroup"><label>Actual (min)</label><input type="number" id="st-actual" placeholder="45" min="0" max="600" value="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="fgroup"><label>Pomodoros</label><input type="number" id="st-pomos" placeholder="2" min="1" max="20" value="2"></div>
+      <div class="fgroup"><label>Focus Score (1–100)</label><input type="number" id="st-focus" placeholder="80" min="1" max="100" value="80"></div>
+    </div>
+    <div class="fgroup"><label>Notes</label><input type="text" id="st-notes" placeholder="What did you cover?"></div>
+    <button class="btn-primary" id="studySubmit">Save Session</button>
+    <button class="btn-danger" id="studyDelete" style="display:none">Delete</button>
+  </div>
+</div>
+
+<!-- EXAM MODAL -->
+<div class="overlay" id="examOverlay" role="dialog" aria-modal="true" aria-label="Add or edit exam">
+  <div class="modal">
+    <div class="modal-hdr"><h2 id="examModalTitle">Add Exam</h2><button class="modal-close" id="examClose" aria-label="Close">&times;</button></div>
+    <div class="fgroup"><label>Title</label><input type="text" id="ex-title" placeholder="e.g. CSSD 314 Final Exam"><div class="err-msg" id="err-ex-title">Required</div></div>
+    <div class="form-row">
+      <div class="fgroup"><label>Course</label><select id="ex-course"><option value="">— none —</option></select></div>
+      <div class="fgroup"><label>Difficulty</label>
+        <select id="ex-diff"><option value="easy">🟢 Easy</option><option value="moderate" selected>🟡 Moderate</option><option value="hard">🔴 Hard</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="fgroup"><label>Date &amp; Time</label><input type="datetime-local" id="ex-date"><div class="err-msg" id="err-ex-date">Required</div></div>
+      <div class="fgroup"><label>Location</label><input type="text" id="ex-loc" placeholder="Hall C"></div>
+    </div>
+    <div class="form-row">
+      <div class="fgroup"><label>Topics Done</label><input type="number" id="ex-done" min="0" value="0"></div>
+      <div class="fgroup"><label>Total Topics</label><input type="number" id="ex-total" min="1" value="10"></div>
+    </div>
+    <div class="fgroup"><label>Revision Progress (%)</label>
+      <input type="range" id="ex-rev" min="0" max="100" value="0" style="width:100%;accent-color:var(--teal)">
+      <div style="text-align:right;font-family:var(--f-mono);font-size:.75rem;color:var(--teal)" id="ex-rev-val">0%</div>
+    </div>
+    <div class="fgroup"><label>Notes</label><input type="text" id="ex-notes" placeholder="Topics to focus on…"></div>
+    <button class="btn-primary" id="examSubmit">Add Exam</button>
+    <button class="btn-danger" id="examDelete" style="display:none">Delete</button>
+  </div>
+</div>
+
+<!-- NOTE MODAL -->
+<div class="overlay" id="noteOverlay" role="dialog" aria-modal="true" aria-label="Add or edit note">
+  <div class="modal">
+    <div class="modal-hdr"><h2 id="noteModalTitle">New Note</h2><button class="modal-close" id="noteClose" aria-label="Close">&times;</button></div>
+    <div class="fgroup"><label>Title</label><input type="text" id="n-title" placeholder="e.g. Week 3 – Cryptography key points"><div class="err-msg" id="err-n-title">Required</div></div>
+    <div class="form-row">
+      <div class="fgroup"><label>Course</label><select id="n-course"><option value="">— general —</option></select></div>
+      <div class="fgroup"><label>Date</label><input type="date" id="n-date"></div>
+    </div>
+    <div class="fgroup"><label>Note</label>
+      <textarea id="n-body" rows="6" placeholder="Write your notes here…" style="width:100%;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-xs);color:var(--text);font-family:var(--f-body);font-size:.9rem;resize:vertical;transition:border-color .2s"></textarea>
+    </div>
+    <div class="fgroup" style="display:flex;align-items:center;gap:10px">
+      <input type="checkbox" id="n-pinned" style="accent-color:var(--gold);width:16px;height:16px">
+      <label for="n-pinned" style="font-size:.85rem;color:var(--text-2);font-weight:600;text-transform:none;letter-spacing:0">Pin this note</label>
+    </div>
+    <button class="btn-primary" id="noteSubmit">Save Note</button>
+    <button class="btn-danger" id="noteDelete" style="display:none">Delete</button>
+  </div>
+</div>
+
+<!-- COURSE DETAIL MODAL -->
+<div class="overlay" id="courseDetailOverlay" role="dialog" aria-modal="true" aria-label="Course detail">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2 id="cdTitle" style="max-width:82%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis"></h2>
+      <div style="display:flex;gap:8px">
+        <button class="modal-close" id="cdEdit" style="width:auto;padding:0 12px;border-radius:8px;font-size:.75rem;font-weight:700;color:var(--teal);border-color:rgba(0,230,184,.3)" aria-label="Edit course">✏️ Edit</button>
+        <button class="modal-close" id="cdClose" aria-label="Close course detail">&times;</button>
+      </div>
+    </div>
+    <div id="cdBody"></div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab" title="Add">+</button>
+
+  <!-- MATERIALS VIEW -->
+  <div id="materialsView" style="display:none">
+    <div class="mat-toolbar">
+      <div><h2 class="mat-title">Materials</h2><p class="mat-sub">Notes &amp; slides, organised by course</p></div>
+      <button class="mat-upload-btn" id="openUploadBtn">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Upload
+      </button>
+    </div>
+    <div class="mat-filters">
+      <select id="matCourseFilter" class="mat-select"></select>
+      <select id="matTypeFilter" class="mat-select">
+        <option value="">All Types</option>
+        <option value="slides">Slides</option>
+        <option value="notes">Notes</option>
+        <option value="lab">Lab Guide</option>
+        <option value="assignment">Assignment</option>
+        <option value="past-paper">Past Paper</option>
+      </select>
+      <input type="search" id="matSearch" class="mat-search" placeholder="Search title or course…">
+    </div>
+    <div class="week-chips" id="weekChips"></div>
+    <div class="mat-grid" id="matGrid"></div>
+  </div>
+
+<!-- UPLOAD MODAL -->
+<div class="overlay" id="uploadOverlay" role="dialog" aria-modal="true" aria-label="Upload material">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2>Upload Material</h2>
+      <button class="modal-close" id="uploadClose" aria-label="Close upload dialog">&times;</button>
+    </div>
+    <div class="fgroup">
+      <label>Title <span style="color:var(--red)">*</span></label>
+      <input type="text" id="u-title" placeholder="e.g. Week 3 – Cryptography Slides">
+      <div class="err-msg" id="err-u-title">Required</div>
+    </div>
+    <div class="form-row">
+      <div class="fgroup">
+        <label>Course <span style="color:var(--red)">*</span></label>
+        <select id="u-course">
+          <option value="">— select —</option>
+        </select>
+        <div class="err-msg" id="err-u-course">Required</div>
+      </div>
+      <div class="fgroup">
+        <label>Week</label>
+        <select id="u-week">
+          <option value="">— none —</option>
+          <option>Week 1</option><option>Week 2</option><option>Week 3</option>
+          <option>Week 4</option><option>Week 5</option><option>Week 6</option>
+          <option>Week 7</option><option>Week 8</option><option>Week 9</option>
+          <option>Week 10</option><option>Week 11</option><option>Week 12</option>
+        </select>
+      </div>
+    </div>
+    <div class="fgroup">
+      <label>Type</label>
+      <select id="u-type">
+        <option value="slides">📊 Slides</option>
+        <option value="notes">📝 Notes</option>
+        <option value="lab">🔬 Lab Guide</option>
+        <option value="assignment">📋 Assignment</option>
+        <option value="past-paper">📜 Past Paper</option>
+      </select>
+    </div>
+    <!-- Drop zone -->
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-inner" id="dropInner">
+        <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:.4;margin-bottom:10px"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+        <p class="drop-label">Drop file here or <span class="drop-browse">browse</span></p>
+        <p class="drop-hint">PDF · PPT · DOCX · PNG · JPG</p>
+      </div>
+      <input type="file" id="u-file" accept=".pdf,.ppt,.pptx,.doc,.docx,.png,.jpg,.jpeg" style="display:none">
+    </div>
+    <div class="file-preview" id="filePreview" style="display:none">
+      <span class="fp-icon" id="fpIcon">📄</span>
+      <div class="fp-info">
+        <div class="fp-name" id="fpName"></div>
+        <div class="fp-size" id="fpSize"></div>
+      </div>
+      <button class="fp-clear" id="fpClear" aria-label="Remove selected file">&times;</button>
+    </div>
+    <button class="btn-primary" id="uploadSubmit">Upload Material</button>
+  </div>
+</div>
+
+<!-- MATERIAL VIEWER MODAL -->
+<div class="overlay" id="viewerOverlay" role="dialog" aria-modal="true" aria-label="Material preview">
+  <div class="modal" style="max-height:95vh">
+    <div class="modal-hdr">
+      <h2 id="viewerTitle" style="font-size:.95rem;max-width:80%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Material</h2>
+      <div style="display:flex;gap:8px">
+        <button class="modal-close" id="viewerDownload" title="Download" style="width:auto;padding:0 12px;border-radius:8px;font-size:.75rem;font-weight:700;color:var(--teal);border-color:rgba(0,230,184,.3)">↓ Save</button>
+        <button class="modal-close" id="viewerClose" aria-label="Close preview">&times;</button>
+      </div>
+    </div>
+    <div id="viewerBody" style="overflow:auto;max-height:calc(90vh - 80px);border-radius:8px;background:var(--bg)"></div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab" title="Add">+</button>
+
+<!-- BOTTOM NAV -->
+<nav class="view-bar">
+  <button class="v-tab active" data-view="day">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    Today
+  </button>
+  <button class="v-tab" data-view="courses">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+    Courses
+  </button>
+  <button class="v-tab" data-view="materials">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+    Files
+    <span class="cnt" id="matBadge">0</span>
+  </button>
+  <button class="v-tab" data-view="study">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Study
+  </button>
+  <button class="v-tab" data-view="deadlines">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+    Tasks
+    <span class="cnt" id="dlBadge">0</span>
+  </button>
+  <button class="v-tab" data-view="more">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+    More
+  </button>
+</nav>
+
+<!-- ADD/EDIT CLASS MODAL -->
+<div class="overlay" id="classOverlay" role="dialog" aria-modal="true" aria-label="Add or edit class">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2 id="classModalTitle">Add Class</h2>
+      <button class="modal-close" id="classClose" aria-label="Close add class dialog">&times;</button>
+    </div>
+    <div class="form-row">
+      <div class="fgroup">
+        <label>Day</label>
+        <select id="f-day">
+          <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+          <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <label>Type</label>
+        <select id="f-type">
+          <option value="lecture">📖 Lecture</option>
+          <option value="lab">🔬 Lab</option>
+          <option value="tutorial">📝 Tutorial</option>
+          <option value="exam">📋 Exam</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="fgroup">
+        <label>Start Time</label>
+        <input type="time" id="f-start">
+        <div class="err-msg" id="err-start">Required</div>
+      </div>
+      <div class="fgroup">
+        <label>End Time</label>
+        <input type="time" id="f-end">
+        <div class="err-msg" id="err-end">Required</div>
+      </div>
+    </div>
+    <div class="fgroup">
+      <label>Course Code</label>
+      <input type="text" id="f-code" placeholder="e.g. CSSD 314">
+    </div>
+    <div class="fgroup">
+      <label>Course Name</label>
+      <input type="text" id="f-name" placeholder="e.g. System Access and Control">
+      <div class="err-msg" id="err-f-name">Course name is required</div>
+    </div>
+    <div class="fgroup">
+      <label>Lecturer</label>
+      <input type="text" id="f-lecturer" placeholder="e.g. Mr. Oppong Kyeremanteng">
+    </div>
+    <div class="fgroup">
+      <label>Venue</label>
+      <input type="text" id="f-venue" placeholder="e.g. SVF 4 B">
+    </div>
+    <div class="fgroup">
+      <label>Note (optional)</label>
+      <input type="text" id="f-note" placeholder="e.g. Moved from Tuesday">
+    </div>
+    <div class="fgroup">
+      <label>Colour</label>
+      <div class="color-row" id="colorPicker"></div>
+    </div>
+    <button class="btn-primary" id="classSubmit">Add Class</button>
+    <button class="btn-danger" id="classDelete" style="display:none">Delete Class</button>
+  </div>
+</div>
+
+<!-- ADD/EDIT DEADLINE MODAL -->
+<div class="overlay" id="dlOverlay" role="dialog" aria-modal="true" aria-label="Add or edit deadline">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2 id="dlModalTitle">Add Deadline</h2>
+      <button class="modal-close" id="dlClose" aria-label="Close add deadline dialog">&times;</button>
+    </div>
+    <div class="fgroup">
+      <label>Title</label>
+      <input type="text" id="dl-title" placeholder="e.g. CSSD 312 Assignment">
+      <div class="err-msg" id="err-dl-title">Required</div>
+    </div>
+    <div class="form-row">
+      <div class="fgroup">
+        <label>Due Date</label>
+        <input type="date" id="dl-date">
+        <div class="err-msg" id="err-dl-date">Required</div>
+      </div>
+      <div class="fgroup">
+        <label>Due Time</label>
+        <input type="time" id="dl-time">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="fgroup">
+        <label>Course</label>
+        <select id="dl-course"><option value="">— none —</option></select>
+      </div>
+      <div class="fgroup">
+        <label>Priority</label>
+        <select id="dl-priority">
+          <option value="high">🔴 High</option>
+          <option value="medium" selected>🟡 Medium</option>
+          <option value="low">🔵 Low</option>
+        </select>
+      </div>
+    </div>
+    <div class="fgroup">
+      <label>Description (optional)</label>
+      <input type="text" id="dl-desc" placeholder="Any extra notes…">
+    </div>
+    <button class="btn-primary" id="dlSubmit">Add Deadline</button>
+    <button class="btn-danger" id="dlDelete" style="display:none">Delete</button>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="overlay" id="settingsOverlay" role="dialog" aria-modal="true" aria-label="Settings">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2>Settings</h2>
+      <button class="modal-close" id="settingsClose" aria-label="Close settings">&times;</button>
+    </div>
+    <div class="fgroup">
+      <label>Your Name</label>
+      <input type="text" id="s-name" placeholder="Enter your name">
+    </div>
+    <div class="form-row">
+      <div class="fgroup">
+        <label>Institution</label>
+        <input type="text" id="s-institution" placeholder="e.g. GCTU">
+      </div>
+      <div class="fgroup">
+        <label>Programme / Group</label>
+        <input type="text" id="s-programme" placeholder="e.g. BCYBS L300 GRP A">
+      </div>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Class Reminders</div>
+        <div class="setting-desc">Browser notification 15 min before class</div>
+      </div>
+      <button class="toggle" id="toggleReminders" role="switch" aria-checked="false" aria-label="Toggle class reminders"></button>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Deadline Reminders</div>
+        <div class="setting-desc">Alert 24 hrs before deadline</div>
+      </div>
+      <button class="toggle" id="toggleDlReminders" role="switch" aria-checked="false" aria-label="Toggle deadline reminders"></button>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Compact Cards</div>
+        <div class="setting-desc">Shorter class cards</div>
+      </div>
+      <button class="toggle" id="toggleCompact" role="switch" aria-checked="false" aria-label="Toggle compact class cards"></button>
+    </div>
+    <button class="btn-primary" id="installBtn" style="display:none; margin-top:14px;">📲 Install App to Home Screen</button>
+    <div style="margin-top:14px; display:flex; gap:10px;">
+      <button class="btn-primary" id="exportBtn" style="background:var(--surface-3); color:var(--text);">⬇ Backup Everything</button>
+      <button class="btn-primary" id="importTrigger" style="background:var(--surface-3); color:var(--text);">⬆ Restore Backup</button>
+    </div>
+    <p style="font-size:.68rem; color:var(--text-2); margin-top:8px; line-height:1.5;">Backup includes your timetable, deadlines, attendance, and every uploaded file — packaged as a .ctbackup file. Keep a copy somewhere safe (cloud drive, email to yourself).</p>
+    <input type="file" id="importFile" accept=".ctbackup,.zip,.json" style="display:none">
+    <button class="btn-danger" id="resetBtn" style="margin-top:10px;">Reset All Data</button>
+  </div>
+</div>
+
+<!-- ONBOARDING — shown only on first run, gates the app -->
+<div id="onboardingOverlay" style="
+  position:fixed;inset:0;z-index:200;
+  background:radial-gradient(ellipse 900px 600px at 20% -10%,rgba(0,230,184,0.1),transparent 60%),
+             radial-gradient(ellipse 600px 500px at 90% 10%,rgba(232,179,57,0.07),transparent 55%),
+             #070f0d;
+  display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;
+" role="dialog" aria-modal="true" aria-label="Welcome to ClassTrack">
+  <div style="max-width:440px;width:100%">
+
+    <!-- Logo + wordmark -->
+    <div style="text-align:center;margin-bottom:28px">
+      <svg width="56" height="56" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:12px">
+        <defs>
+          <linearGradient id="obHex" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#102923"/><stop offset="1" stop-color="#0a1614"/>
+          </linearGradient>
+          <clipPath id="obClip"><path d="M20 1.5 L36.5 11 V29 L20 38.5 L3.5 29 V11 Z"/></clipPath>
+        </defs>
+        <g stroke="#1c352e" stroke-width="1.6" stroke-linecap="round">
+          <path d="M20 1.5 V0"/><path d="M36.5 11 L37.9 10.2"/><path d="M36.5 29 L37.9 29.8"/>
+          <path d="M20 38.5 V40"/><path d="M3.5 29 L2.1 29.8"/><path d="M3.5 11 L2.1 10.2"/>
+        </g>
+        <path d="M20 1.5 L36.5 11 V29 L20 38.5 L3.5 29 V11 Z" fill="url(#obHex)" stroke="#00e6b8" stroke-width="1.4"/>
+        <g clip-path="url(#obClip)" opacity="0.16" stroke="#00e6b8" stroke-width="0.8">
+          <path d="M-4 8 L24 36"/><path d="M2 2 L30 30"/><path d="M10 -2 L38 26"/>
+          <path d="M-4 30 L16 10" stroke="#e8b339"/><path d="M6 36 L28 14" stroke="#e8b339"/><path d="M16 38 L36 18" stroke="#e8b339"/>
+        </g>
+        <path d="M14.5 13.5 C10 13.5 10 26.5 14.5 26.5" fill="none" stroke="#00e6b8" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M16.5 13.5 H26" fill="none" stroke="#e8b339" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M21 13.5 V26.5" fill="none" stroke="#e8b339" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="29" cy="24.5" r="2.1" fill="#00e6b8"/>
+      </svg>
+      <div style="font-family:var(--f-display);font-size:1.9rem;font-weight:700;letter-spacing:-.5px;color:var(--text)">Class<b style="color:var(--teal)">Track</b></div>
+      <div style="font-size:.85rem;color:var(--text-2);margin-top:6px">Your personal academic command centre</div>
+    </div>
+
+    <!-- Card -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:26px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--teal),var(--gold))"></div>
+
+      <div style="font-family:var(--f-display);font-size:1.05rem;font-weight:700;margin-bottom:6px">Set up your workspace</div>
+      <div style="font-size:.82rem;color:var(--text-2);margin-bottom:20px;line-height:1.5">Everything stays on your device — no account, no server, no data leaving your browser.</div>
+
+      <div class="fgroup">
+        <label>Your Name <span style="color:var(--red)">*</span></label>
+        <input type="text" id="ob-name" placeholder="e.g. Kevin Amissah Baiden" autocomplete="name" style="font-size:1rem">
+        <div class="err-msg" id="err-ob-name">Please enter your name</div>
+      </div>
+      <div class="form-row">
+        <div class="fgroup">
+          <label>Institution</label>
+          <input type="text" id="ob-institution" placeholder="e.g. GCTU">
+        </div>
+        <div class="fgroup">
+          <label>Programme</label>
+          <input type="text" id="ob-programme" placeholder="e.g. BCYBS L300">
+        </div>
+      </div>
+
+      <!-- Starting data choice -->
+      <div style="margin-bottom:18px">
+        <label style="display:block;font-size:.72rem;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Start with</label>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label class="ob-choice" id="obChoiceBlank" style="cursor:pointer">
+            <input type="radio" name="ob-data" value="blank" style="accent-color:var(--teal)"> 
+            <div>
+              <div style="font-weight:700;font-size:.88rem">Blank slate</div>
+              <div style="font-size:.75rem;color:var(--text-2)">Set up your own timetable from scratch</div>
+            </div>
+          </label>
+          <label class="ob-choice ob-choice-selected" id="obChoiceSample" style="cursor:pointer">
+            <input type="radio" name="ob-data" value="sample" checked style="accent-color:var(--teal)"> 
+            <div>
+              <div style="font-weight:700;font-size:.88rem">Sample timetable</div>
+              <div style="font-size:.75rem;color:var(--text-2)">Start with a GCTU Cybersecurity example — edit to match yours</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <button id="obBeginBtn" class="btn-primary" style="font-size:1rem;padding:15px">
+        Open ClassTrack →
+      </button>
+    </div>
+
+    <!-- Footer note -->
+    <div style="text-align:center;margin-top:16px;font-size:.72rem;color:var(--text-2);line-height:1.6">
+      All data is stored locally in your browser. Nothing is sent anywhere.<br>
+      You can change all settings later at any time.
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="overlay confirm-overlay" id="confirmOverlay" role="alertdialog" aria-modal="true" aria-label="Confirm action">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">Are you sure?</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button class="conf-cancel" id="confirmCancel">Cancel</button>
+      <button class="conf-ok" id="confirmOk">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+(function(){
+'use strict';
+
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const COLORS = ['#00e6b8','#e8b339','#d9643a','#5b6ee8','#e3486b','#3da35d','#f2994a','#8e5bb8'];
+const TYPE_ICONS = {lecture:'📖',lab:'🔬',tutorial:'📝',exam:'📋'};
+const STORAGE_KEY = 'classtrack_v4';
+
+const DEFAULT_COURSES = [
+  {id:'course1',code:'CSSD 314',name:'System Access and Control',credits:3,instructor:'Mr. Oppong Kyeremanteng',venue:'SVF 4 B',color:'#8e5bb8',attendanceTarget:75,notes:'Moved from Tuesday 2:30 PM to Thursday 4:00 PM'},
+  {id:'course2',code:'CSSD 312',name:'Information Systems Audit',credits:3,instructor:'Dr. Francis Kwadzo Agbenyegah',venue:'SVF 4 B',color:'#e8b339',attendanceTarget:75,notes:''},
+  {id:'course3',code:'CSSD 142',name:'Security Policies and Implementation Issues',credits:3,instructor:'Mr. Alex Ofori Karikari',venue:'SVF 4 B',color:'#e3486b',attendanceTarget:75,notes:''},
+  {id:'course4',code:'CSBC 352',name:'CyberSecurity / Software Project Management',credits:3,instructor:'Dr. Samuel Banning Osei',venue:'SVF 4 B',color:'#3da35d',attendanceTarget:75,notes:''},
+  {id:'course5',code:'CSGS 392',name:'Research Methods',credits:3,instructor:'Dr. Seth Ampadu',venue:'SVF 4 B',color:'#d9643a',attendanceTarget:75,notes:''},
+  {id:'course6',code:'BUPE 362',name:'Principles of Business Management & Entrepreneurship',credits:3,instructor:'Dr. Afia Nyarko Boakye',venue:'SVF 4 B',color:'#5b6ee8',attendanceTarget:75,notes:''},
+  {id:'course7',code:'BUEA 364',name:'Basic Economics & Accounting Principles',credits:3,instructor:'Dr. Isaiah Sikayena',venue:'SVF 4 B',color:'#00e6b8',attendanceTarget:75,notes:''},
+];
+
+let state = {
+  classes: [],
+  courses: [],      // {id,code,name,credits,instructor,venue,color,attendanceTarget,notes}
+  deadlines: [],
+  exams: [],        // {id,courseCode,title,examAt,location,difficulty,revisionProgress,completedTopics,totalTopics,notes}
+  studySessions: [],// {id,courseCode,title,date,plannedMins,actualMins,pomodoroCount,focusScore,notes}
+  classNotes: [],   // {id,courseCode,classId,date,body,pinned}
+  settings: { name:'', institution:'', programme:'', reminders:false, dlReminders:false, compact:false },
+  attendance: {}
+};
+
+const DEFAULT_CLASSES = [
+  {id:'c1',day:'Wednesday',startTime:'10:00',endTime:'11:30',code:'BUPE 362',name:'Principles of Business Management & Entrepreneurship',lecturer:'Dr. Afia Nyarko Boakye',venue:'SVF 4 B',color:'#5b6ee8',type:'lecture',note:''},
+  {id:'c2',day:'Wednesday',startTime:'14:30',endTime:'16:00',code:'BUEA 364',name:'Basic Economics & Accounting Principles',lecturer:'Dr. Isaiah Sikayena',venue:'SVF 4 B',color:'#00e6b8',type:'lecture',note:''},
+  {id:'c3',day:'Thursday',startTime:'08:30',endTime:'10:00',code:'CSSD 312',name:'Information Systems Audit',lecturer:'Dr. Francis Kwadzo Agbenyegah',venue:'SVF 4 B',color:'#e8b339',type:'lecture',note:''},
+  {id:'c4',day:'Thursday',startTime:'14:30',endTime:'16:00',code:'CSSD 142',name:'Security Policies and Implementation Issues',lecturer:'Mr. Alex Ofori Karikari',venue:'SVF 4 B',color:'#e3486b',type:'lecture',note:''},
+  {id:'c5',day:'Thursday',startTime:'16:00',endTime:'17:30',code:'CSSD 314',name:'System Access and Control',lecturer:'Mr. Oppong Kyeremanteng',venue:'SVF 4 B',color:'#8e5bb8',type:'lecture',note:'Moved from Tuesday 2:30 PM'},
+  {id:'c6',day:'Friday',startTime:'08:30',endTime:'10:00',code:'CSBC 352',name:'CyberSecurity / Software Project Management',lecturer:'Dr. Samuel Banning Osei',venue:'SVF 4 B',color:'#3da35d',type:'lecture',note:''},
+  {id:'c7',day:'Friday',startTime:'10:00',endTime:'11:30',code:'CSGS 392',name:'Research Methods',lecturer:'Dr. Seth Ampadu',venue:'SVF 4 B',color:'#d9643a',type:'lecture',note:''}
+];
+
+let activeDay = '';
+let activeView = 'day';
+let editClassId = null;
+let editDlId = null;
+let selectedColor = COLORS[0];
+let nextClassId = null;
+let confirmCb = null;
+let notifyTimer = null;
+
+// ─── PERSISTENCE ─────────────────────────────────────────────────────────────
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+}
+function load() {
+  try {
+    // migrate from v3 key if v4 not yet written
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('classtrack_v3');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      Object.assign(state, parsed);
+      // seed courses if not yet present
+      if(!state.courses || !state.courses.length) state.courses = [...DEFAULT_COURSES];
+      if(!state.exams)        state.exams = [];
+      if(!state.studySessions)state.studySessions = [];
+      if(!state.classNotes)   state.classNotes = [];
+    } else {
+      state.classes = [...DEFAULT_CLASSES];
+      state.courses  = [...DEFAULT_COURSES];
+      save();
+    }
+  } catch(e) {
+    state.classes = [...DEFAULT_CLASSES];
+    state.courses  = [...DEFAULT_COURSES];
+  }
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Makes a non-native clickable element (div-based card) operable by keyboard: focusable,
+// announced as a button, and triggerable with Enter/Space — same as native click target.
+function makeKeyAccessible(el, label){
+  el.setAttribute('tabindex','0');
+  el.setAttribute('role','button');
+  if(label) el.setAttribute('aria-label', label);
+  el.addEventListener('keydown', e=>{
+    if(e.key==='Enter' || e.key===' '){
+      e.preventDefault();
+      el.click();
+    }
+  });
+}
+function toMins(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
+function fmtTime(t){
+  const [h,m]=t.split(':').map(Number);
+  const ampm=h>=12?'PM':'AM';
+  return `${h%12||12}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+function fmtDate(d){
+  return new Date(d+'T00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+function todayName(){ return DAYS[new Date().getDay()===0?6:new Date().getDay()-1]; }
+function todayStr(){ return new Date().toISOString().split('T')[0]; }
+function nowMins(){ const n=new Date(); return n.getHours()*60+n.getMinutes(); }
+
+function toast(msg, icon='✓'){
+  const el = document.createElement('div');
+  el.className='toast';
+  el.innerHTML=`<span>${icon}</span>${esc(msg)}`;
+  document.getElementById('toastWrap').appendChild(el);
+  setTimeout(()=>el.remove(), 3200);
+}
+
+function confirm_(title, msg, cb, opts){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  const okBtn = document.getElementById('confirmOk');
+  okBtn.textContent = (opts&&opts.okLabel) || 'Delete';
+  okBtn.classList.toggle('conf-ok-neutral', !!(opts&&opts.neutral));
+  confirmCb=cb;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+
+function isAttended(cls){
+  return (state.attendance[cls.id]||[]).includes(todayStr());
+}
+
+// ─── GREETING ────────────────────────────────────────────────────────────────
+function updateGreeting(){
+  const h = new Date().getHours();
+  const name = state.settings.name ? `, ${state.settings.name}` : '';
+  const g = h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+  document.getElementById('greeting').textContent = g + name;
+
+  // dynamic meta badge
+  const badge = document.getElementById('metaBadgeText');
+  if(badge){
+    const parts = [state.settings.institution, state.settings.programme].filter(Boolean);
+    badge.textContent = parts.length ? parts.join(' · ') : 'Your Academic Planner';
+  }
+
+  // dynamic page title
+  const titleParts = [state.settings.name?`${state.settings.name}'s`:'', state.settings.institution||'', 'ClassTrack'].filter(Boolean);
+  document.title = titleParts.join(' ');
+}
+
+// ─── NEXT CLASS WIDGET ────────────────────────────────────────────────────────
+function updateWidget(){
+  const today = todayName();
+  const nm = nowMins();
+  const dateKey = todayStr();
+
+  // find classes today sorted
+  const todayClasses = state.classes
+    .filter(c=>c.day===today)
+    .sort((a,b)=>toMins(a.startTime)-toMins(b.startTime));
+
+  // ring: fraction of day's class time done
+  if(todayClasses.length > 0){
+    const first = toMins(todayClasses[0].startTime);
+    const last  = toMins(todayClasses[todayClasses.length-1].endTime);
+    const span  = last - first;
+    const elapsed = Math.max(0, Math.min(span, nm - first));
+    const pct = span > 0 ? Math.round((elapsed/span)*100) : 0;
+    const circ = 188.5;
+    document.getElementById('ringFill').style.strokeDashoffset = circ - (circ * pct/100);
+    document.getElementById('ringPct').textContent = pct + '%';
+  } else {
+    document.getElementById('ringFill').style.strokeDashoffset = 188.5;
+    document.getElementById('ringPct').textContent = '--';
+  }
+
+  // find live or next class
+  let live = todayClasses.find(c=>nm>=toMins(c.startTime)&&nm<toMins(c.endTime));
+  let next = live || todayClasses.find(c=>toMins(c.startTime)>nm);
+
+  // if no class today look ahead
+  if(!next){
+    for(let i=1;i<=6;i++){
+      const dayIdx = (DAYS.indexOf(today)+i)%7;
+      const upcomingDay = DAYS[dayIdx];
+      const upcoming = state.classes.filter(c=>c.day===upcomingDay).sort((a,b)=>toMins(a.startTime)-toMins(b.startTime));
+      if(upcoming.length){next=upcoming[0];break;}
+    }
+  }
+
+  if(next){
+    nextClassId = next.id;
+    document.getElementById('wCourse').textContent = `${next.code} — ${next.name}`;
+    document.getElementById('wMeta').textContent = `${fmtTime(next.startTime)}–${fmtTime(next.endTime)} · ${next.venue||'TBA'} · ${next.day}`;
+
+    if(live){
+      const rem = toMins(live.endTime)-nm;
+      document.getElementById('wCountdown').textContent = `${rem} min left`;
+      document.getElementById('wCountdown').style.color='var(--gold)';
+      document.getElementById('wActions').style.display='flex';
+      document.getElementById('widget-label-text') && (document.getElementById('widget-label-text').textContent='In Progress');
+    } else {
+      const mins = toMins(next.startTime)-nm;
+      if(mins<0){
+        document.getElementById('wCountdown').textContent = next.day===today?'Soon':'Next: '+next.day;
+      } else if(mins<60){
+        document.getElementById('wCountdown').textContent = `in ${mins} min`;
+      } else {
+        const h=Math.floor(mins/60), m=mins%60;
+        document.getElementById('wCountdown').textContent = m?`in ${h}h ${m}m`:`in ${h}h`;
+      }
+      document.getElementById('wCountdown').style.color='var(--teal)';
+      document.getElementById('wActions').style.display='none';
+    }
+  } else {
+    nextClassId=null;
+    document.getElementById('wCourse').textContent='No upcoming classes';
+    document.getElementById('wMeta').textContent='';
+    document.getElementById('wCountdown').textContent='🎉 Free!';
+    document.getElementById('wActions').style.display='none';
+  }
+
+  updateStats();
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+// updateStats moved to v4 section below
+
+// ─── DAY TABS ─────────────────────────────────────────────────────────────────
+function renderDayStrip(){
+  const today = todayName();
+  const strip = document.getElementById('dayStrip');
+  strip.innerHTML = DAYS.map(d=>{
+    const cnt = state.classes.filter(c=>c.day===d).length;
+    const isToday = d===today;
+    const isActive = d===activeDay;
+    return `<button class="d-tab${isActive?' active':''}${isToday?' today':''}" data-day="${d}">
+      <span class="d-name">${d.slice(0,3)}</span>
+      <span class="d-letter">${d[0]}</span>
+      ${cnt?`<span class="d-count">${cnt}</span>`:''}
+    </button>`;
+  }).join('');
+  strip.querySelectorAll('.d-tab').forEach(t=>{
+    t.addEventListener('click',()=>{activeDay=t.dataset.day;renderDayStrip();renderClasses();});
+  });
+}
+
+// ─── CLASS LIST ───────────────────────────────────────────────────────────────
+function renderClasses(){
+  const list = document.getElementById('classList');
+  const today = todayName();
+  const nm = nowMins();
+  const dateKey = todayStr();
+
+  const dayClasses = state.classes
+    .filter(c=>c.day===activeDay)
+    .sort((a,b)=>toMins(a.startTime)-toMins(b.startTime));
+
+  document.getElementById('schedTitle').textContent = activeDay+' Schedule';
+  document.getElementById('dateStr').textContent = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+
+  if(!dayClasses.length){
+    list.innerHTML=`<div class="empty">
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <p>No classes on ${activeDay}</p><small>Tap + to add one</small>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = dayClasses.map(cls=>{
+    const sm=toMins(cls.startTime), em=toMins(cls.endTime);
+    const isLive = activeDay===today && nm>=sm && nm<em;
+    const attended = isAttended(cls);
+    const compact = state.settings.compact;
+    return `<div class="c-card${isLive?' live':''}${attended?' attended':''}${cls.note?' moved-note':''}" style="--card-color:${cls.color}" data-id="${cls.id}">
+      <div class="card-time">
+        ${isLive?'<span class="live-dot"></span>':''}
+        ${fmtTime(cls.startTime)} &ndash; ${fmtTime(cls.endTime)}
+      </div>
+      <div class="card-tags">
+        <span class="c-type">${TYPE_ICONS[cls.type]||'📖'} ${cls.type||'lecture'}</span>
+        <span class="c-code">${esc(cls.code)}</span>
+        ${matCountFor(cls.code)>0?`<span class="c-mat-badge" tabindex="0" role="button" onclick="event.stopPropagation();openCourseMaterials('${esc(cls.code)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();openCourseMaterials('${esc(cls.code)}')}" title="View materials for ${esc(cls.code)}" aria-label="View ${matCountFor(cls.code)} materials for ${esc(cls.code)}">📎 ${matCountFor(cls.code)}</span>`:''}
+      </div>
+      <div class="card-name">${esc(cls.name)}</div>
+      ${!compact?`<div class="card-meta">
+        ${cls.lecturer?`<span><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>${esc(cls.lecturer)}</span>`:''}
+        ${cls.venue?`<span><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>${esc(cls.venue)}</span>`:''}
+        ${cls.note?`<span style="color:var(--gold)"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>${esc(cls.note)}</span>`:''}
+      </div>`:''}
+      <div class="card-actions">
+        <button class="c-btn chk" onclick="event.stopPropagation();markAttend('${cls.id}')" title="Mark attended" aria-label="Mark ${esc(cls.code)} attended">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+        </button>
+        <button class="c-btn" onclick="event.stopPropagation();openEditClass('${cls.id}')" title="Edit" aria-label="Edit ${esc(cls.code)}">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </button>
+        <button class="c-btn del" onclick="event.stopPropagation();deleteClass('${cls.id}')" title="Delete" aria-label="Delete ${esc(cls.code)}">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.c-card').forEach(c=>{
+    c.addEventListener('click',()=>openEditClass(c.dataset.id));
+    const clsObj = state.classes.find(x=>x.id===c.dataset.id);
+    makeKeyAccessible(c, clsObj?`Edit ${clsObj.code} class`:'Edit class');
+  });
+}
+
+// ─── WEEK VIEW ────────────────────────────────────────────────────────────────
+function renderWeek(){
+  const today = todayName();
+  const tbody = document.getElementById('weekBody');
+  const slots = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'];
+
+  let html = `<tr><th></th>${DAYS.map(d=>`<th class="${d===today?'td':''}">${d.slice(0,3)}</th>`).join('')}</tr>`;
+  slots.forEach(slot=>{
+    const slotH = parseInt(slot);
+    html+=`<tr><td class="time-col">${fmtTime(slot)}</td>`;
+    DAYS.forEach(day=>{
+      const isToday = day===today;
+      const slotClasses = state.classes.filter(c=>{
+        const sh=parseInt(c.startTime);
+        const eh=parseInt(c.endTime);
+        return c.day===day && sh===slotH;
+      });
+      html+=`<td class="${isToday?'today-cell':''}">`;
+      slotClasses.forEach(cls=>{
+        html+=`<div class="wk-cls" style="--card-color:${cls.color}" data-id="${cls.id}">
+          <div class="wk-time">${fmtTime(cls.startTime)}</div>
+          <div class="wk-code">${esc(cls.code.split(' ')[0])}</div>
+        </div>`;
+      });
+      html+='</td>';
+    });
+    html+='</tr>';
+  });
+  tbody.innerHTML=html;
+  tbody.querySelectorAll('.wk-cls').forEach(w=>{
+    w.addEventListener('click',()=>openEditClass(w.dataset.id));
+    makeKeyAccessible(w, 'Edit class');
+  });
+}
+
+// ─── DEADLINES ────────────────────────────────────────────────────────────────
+function renderDeadlines(){
+  const now = new Date();
+  const sorted = [...state.deadlines].sort((a,b)=>new Date(a.date+'T'+(a.time||'00:00'))-new Date(b.date+'T'+(b.time||'00:00')));
+  const list = document.getElementById('dlList');
+
+  if(!sorted.length){
+    list.innerHTML=`<div class="empty"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><p>No deadlines yet</p><small>Add assignments, exams, and projects</small></div>`;
+    return;
+  }
+
+  list.innerHTML=sorted.map(dl=>{
+    const due=new Date(dl.date+'T'+(dl.time||'23:59'));
+    const hours=(due-now)/(1000*60*60);
+    let badge='later',bdgTxt='Later';
+    if(dl.completed){badge='done';bdgTxt='Done';}
+    else if(hours<0){badge='urgent';bdgTxt='Overdue';}
+    else if(hours<24){badge='urgent';bdgTxt='Due Soon';}
+    else if(hours<72){badge='soon';bdgTxt='3 Days';}
+    const dlColor=dl.priority==='high'?'#e3486b':dl.priority==='medium'?'#e8b339':'#00e6b8';
+    const icon=dl.completed?'✅':hours<0?'⏰':hours<24?'🔥':'📝';
+    return `<div class="dl-card${dl.completed?' done':''}" style="--dl-color:${dlColor}" data-id="${dl.id}">
+      <div class="dl-icon">${icon}</div>
+      <div class="dl-body">
+        <div class="dl-title">${esc(dl.title)}</div>
+        <div class="dl-meta">
+          ${dl.course?`<span>${esc(dl.course)}</span>`:''}
+          <span>${fmtDate(dl.date)}${dl.time?' '+fmtTime(dl.time):''}</span>
+          <span class="dl-badge ${badge}">${bdgTxt}</span>
+        </div>
+        ${dl.desc?`<div style="font-size:.78rem;color:var(--text-2);margin-top:4px">${esc(dl.desc)}</div>`:''}
+      </div>
+      <div class="dl-actions">
+        <button class="c-btn chk" onclick="event.stopPropagation();toggleDl('${dl.id}')" title="${dl.completed?'Undo':'Complete'}" aria-label="${dl.completed?'Mark incomplete':'Mark complete'}: ${esc(dl.title)}">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+        </button>
+        <button class="c-btn" onclick="event.stopPropagation();openEditDl('${dl.id}')" title="Edit" aria-label="Edit deadline ${esc(dl.title)}">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </button>
+        <button class="c-btn del" onclick="event.stopPropagation();deleteDl('${dl.id}')" title="Delete" aria-label="Delete deadline ${esc(dl.title)}">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.dl-card').forEach(c=>{
+    c.addEventListener('click',()=>openEditDl(c.dataset.id));
+    const dlObj = state.deadlines.find(x=>x.id===c.dataset.id);
+    makeKeyAccessible(c, dlObj?`Edit deadline ${dlObj.title}`:'Edit deadline');
+  });
+}
+
+// ─── ATTENDANCE ───────────────────────────────────────────────────────────────
+window.markAttend = function(id){
+  if(!state.attendance[id]) state.attendance[id]=[];
+  const key=todayStr();
+  const idx=state.attendance[id].indexOf(key);
+  if(idx>-1){ state.attendance[id].splice(idx,1); toast('Unmarked'); }
+  else { state.attendance[id].push(key); toast('Marked attended 👍','✓'); }
+  save(); renderClasses(); updateStats();
+};
+
+// ─── CLASS CRUD ───────────────────────────────────────────────────────────────
+function renderColorPicker(){
+  document.getElementById('colorPicker').innerHTML=COLORS.map(c=>
+    `<div class="col-opt${c===selectedColor?' sel':''}" style="background:${c}" data-c="${c}"></div>`
+  ).join('');
+  document.getElementById('colorPicker').querySelectorAll('.col-opt').forEach(o=>{
+    o.addEventListener('click',()=>{selectedColor=o.dataset.c;renderColorPicker();});
+  });
+}
+
+function openAddClass(){
+  editClassId=null;
+  document.getElementById('classModalTitle').textContent='Add Class';
+  document.getElementById('classSubmit').textContent='Add Class';
+  document.getElementById('classDelete').style.display='none';
+  document.getElementById('f-day').value=activeDay;
+  document.getElementById('f-type').value='lecture';
+  document.getElementById('f-start').value='';
+  document.getElementById('f-end').value='';
+  document.getElementById('f-code').value='';
+  document.getElementById('f-name').value='';
+  document.getElementById('f-lecturer').value='';
+  document.getElementById('f-venue').value='';
+  document.getElementById('f-note').value='';
+  selectedColor=COLORS[Math.floor(Math.random()*COLORS.length)];
+  renderColorPicker();
+  document.getElementById('classOverlay').classList.add('open');
+}
+
+window.openEditClass = function(id){
+  const cls=state.classes.find(c=>c.id===id);
+  if(!cls)return;
+  editClassId=id;
+  document.getElementById('classModalTitle').textContent='Edit Class';
+  document.getElementById('classSubmit').textContent='Save Changes';
+  document.getElementById('classDelete').style.display='block';
+  document.getElementById('f-day').value=cls.day;
+  document.getElementById('f-type').value=cls.type||'lecture';
+  document.getElementById('f-start').value=cls.startTime;
+  document.getElementById('f-end').value=cls.endTime;
+  document.getElementById('f-code').value=cls.code;
+  document.getElementById('f-name').value=cls.name;
+  document.getElementById('f-lecturer').value=cls.lecturer||'';
+  document.getElementById('f-venue').value=cls.venue||'';
+  document.getElementById('f-note').value=cls.note||'';
+  selectedColor=cls.color;
+  renderColorPicker();
+  document.getElementById('classOverlay').classList.add('open');
+};
+
+window.deleteClass = function(id){
+  const cls=state.classes.find(c=>c.id===id);
+  confirm_('Delete Class',`Remove "${cls?.name}" from your schedule?`,()=>{
+    state.classes=state.classes.filter(c=>c.id!==id);
+    save(); renderAll(); toast('Class removed','🗑️');
+  });
+};
+
+function closeClassModal(){ document.getElementById('classOverlay').classList.remove('open'); }
+
+document.getElementById('classSubmit').addEventListener('click',()=>{
+  const start=document.getElementById('f-start').value;
+  const end=document.getElementById('f-end').value;
+  let ok=true;
+  document.querySelectorAll('.err-msg').forEach(e=>e.classList.remove('show'));
+  if(!start){document.getElementById('err-start').classList.add('show');ok=false;}
+  if(!end){document.getElementById('err-end').classList.add('show');ok=false;}
+  if(start&&end&&start>=end){document.getElementById('err-end').textContent='End must be after start';document.getElementById('err-end').classList.add('show');ok=false;}
+
+  const code=document.getElementById('f-code').value.trim();
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){ document.getElementById('err-f-name').classList.add('show'); ok=false; }
+  if(!ok)return;
+
+  const day=document.getElementById('f-day').value;
+  const conflicts=state.classes.filter(c=>
+    c.day===day&&c.id!==editClassId&&
+    ((start>=c.startTime&&start<c.endTime)||(end>c.startTime&&end<=c.endTime)||(start<=c.startTime&&end>=c.endTime))
+  );
+
+  const cls={
+    id:editClassId||'c'+Date.now(),
+    day, startTime:start, endTime:end, code, name,
+    lecturer:document.getElementById('f-lecturer').value.trim(),
+    venue:document.getElementById('f-venue').value.trim(),
+    note:document.getElementById('f-note').value.trim(),
+    type:document.getElementById('f-type').value,
+    color:selectedColor
+  };
+
+  function commitClass(){
+    if(editClassId){
+      const idx=state.classes.findIndex(c=>c.id===editClassId);
+      state.classes[idx]={...state.classes[idx],...cls};
+      toast('Class updated ✏️');
+    } else {
+      state.classes.push(cls);
+      toast('Class added 📚');
+    }
+    save(); closeClassModal(); renderAll();
+  }
+
+  if(conflicts.length){
+    confirm_('Schedule Conflict', `This overlaps with ${conflicts[0].code} — ${conflicts[0].name}. Add it anyway?`, commitClass, {okLabel:'Add Anyway', neutral:true});
+  } else {
+    commitClass();
+  }
+});
+
+document.getElementById('classDelete').addEventListener('click',()=>{
+  if(editClassId)window.deleteClass(editClassId);
+  closeClassModal();
+});
+document.getElementById('classClose').addEventListener('click',closeClassModal);
+document.getElementById('classOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeClassModal();});
+
+// ─── DEADLINE CRUD ────────────────────────────────────────────────────────────
+function openAddDl(){
+  editDlId=null;
+  document.getElementById('dlModalTitle').textContent='Add Deadline';
+  document.getElementById('dlSubmit').textContent='Add Deadline';
+  document.getElementById('dlDelete').style.display='none';
+  document.getElementById('dl-title').value='';
+  document.getElementById('dl-date').value='';
+  document.getElementById('dl-time').value='';
+  document.getElementById('dl-desc').value='';
+  document.getElementById('dl-priority').value='medium';
+  populateCourseDropdowns();
+  document.getElementById('dlOverlay').classList.add('open');
+}
+
+window.openEditDl = function(id){
+  const dl=state.deadlines.find(d=>d.id===id);
+  if(!dl)return;
+  editDlId=id;
+  document.getElementById('dlModalTitle').textContent='Edit Deadline';
+  document.getElementById('dlSubmit').textContent='Save';
+  document.getElementById('dlDelete').style.display='block';
+  document.getElementById('dl-title').value=dl.title;
+  document.getElementById('dl-date').value=dl.date;
+  document.getElementById('dl-time').value=dl.time||'';
+  document.getElementById('dl-desc').value=dl.desc||'';
+  document.getElementById('dl-priority').value=dl.priority||'medium';
+  updateDlCourseSelect();
+  document.getElementById('dl-course').value=dl.course||'';
+  document.getElementById('dlOverlay').classList.add('open');
+};
+
+window.deleteDl = function(id){
+  const dl=state.deadlines.find(d=>d.id===id);
+  confirm_('Delete Deadline',`Remove "${dl?.title}"?`,()=>{
+    state.deadlines=state.deadlines.filter(d=>d.id!==id);
+    save(); renderDeadlines(); updateStats(); toast('Deadline removed','🗑️');
+  });
+};
+
+window.toggleDl = function(id){
+  const dl=state.deadlines.find(d=>d.id===id);
+  if(!dl)return;
+  dl.completed=!dl.completed;
+  save(); renderDeadlines(); updateStats();
+  toast(dl.completed?'Marked complete! 🎉':'Marked incomplete');
+};
+
+function closeDlModal(){ document.getElementById('dlOverlay').classList.remove('open'); }
+
+document.getElementById('dlSubmit').addEventListener('click',()=>{
+  const title=document.getElementById('dl-title').value.trim();
+  const date=document.getElementById('dl-date').value;
+  let ok=true;
+  document.getElementById('err-dl-title').classList.remove('show');
+  document.getElementById('err-dl-date').classList.remove('show');
+  if(!title){document.getElementById('err-dl-title').classList.add('show');ok=false;}
+  if(!date){document.getElementById('err-dl-date').classList.add('show');ok=false;}
+  if(!ok)return;
+
+  const dl={
+    id:editDlId||'dl'+Date.now(),
+    title, date,
+    time:document.getElementById('dl-time').value||'',
+    course:document.getElementById('dl-course').value,
+    priority:document.getElementById('dl-priority').value,
+    desc:document.getElementById('dl-desc').value.trim(),
+    completed:false
+  };
+
+  if(editDlId){
+    const idx=state.deadlines.findIndex(d=>d.id===editDlId);
+    state.deadlines[idx]={...state.deadlines[idx],...dl};
+    toast('Deadline updated');
+  } else {
+    state.deadlines.push(dl);
+    toast('Deadline added 📝');
+  }
+  save(); closeDlModal(); renderDeadlines(); updateStats();
+});
+
+document.getElementById('dlDelete').addEventListener('click',()=>{ if(editDlId)window.deleteDl(editDlId); closeDlModal(); });
+document.getElementById('dlClose').addEventListener('click',closeDlModal);
+document.getElementById('dlOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDlModal();});
+
+// ─── SETTINGS ─────────────────────────────────────────────────────────────────
+function openSettings(){
+  document.getElementById('s-name').value=state.settings.name;
+  document.getElementById('s-institution').value=state.settings.institution||'';
+  document.getElementById('s-programme').value=state.settings.programme||'';
+  ['Reminders','DlReminders','Compact'].forEach(k=>{
+    const key=k[0].toLowerCase()+k.slice(1);
+    const btn=document.getElementById('toggle'+k);
+    btn.classList.toggle('on',!!state.settings[key]);
+  });
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+function closeSettings(){
+  state.settings.name=document.getElementById('s-name').value.trim();
+  state.settings.institution=document.getElementById('s-institution').value.trim();
+  state.settings.programme=document.getElementById('s-programme').value.trim();
+  save(); updateGreeting();
+  document.getElementById('settingsOverlay').classList.remove('open');
+}
+
+['Reminders','DlReminders','Compact'].forEach(k=>{
+  const key=k[0].toLowerCase()+k.slice(1);
+  document.getElementById('toggle'+k).addEventListener('click',async function(){
+    const turningOn = !state.settings[key];
+
+    // Both reminder toggles rely on Notification permission — route through the same check
+    // used by the bell icon so this toggle can't silently claim "on" while nothing fires.
+    if((key==='reminders'||key==='dlReminders') && turningOn){
+      const ok = await enableReminders();
+      if(!ok) return; // permission denied/unsupported — leave toggle off, don't save a lie
+    }
+
+    state.settings[key]=turningOn;
+    this.classList.toggle('on',turningOn);
+    if(key==='compact'){ renderClasses(); }
+    if(key==='reminders'){ notifyBtn.classList.toggle('active',turningOn); }
+    save();
+    if(turningOn && (key==='reminders'||key==='dlReminders')) checkNotifications();
+  });
+});
+
+document.getElementById('settingsBtn').addEventListener('click',openSettings);
+document.getElementById('settingsClose').addEventListener('click',closeSettings);
+document.getElementById('settingsOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeSettings();});
+
+// Export / Import / Reset — full backup includes uploaded files, not just metadata
+document.getElementById('exportBtn').addEventListener('click', async ()=>{
+  const btn=document.getElementById('exportBtn');
+  if(typeof JSZip==='undefined'){
+    toast('Backup library failed to load — check your internet connection','⚠️');
+    return;
+  }
+  btn.textContent='Packing…'; btn.disabled=true;
+  try{
+    const zip = new JSZip();
+    zip.file('data.json', JSON.stringify(state, null, 2));
+    zip.file('materials.json', JSON.stringify(matMeta, null, 2));
+
+    const filesFolder = zip.folder('files');
+    const withFiles = matMeta.filter(m=>m.hasFile);
+    let done=0;
+    for(const m of withFiles){
+      try{
+        const blob = await dbGetFile(m.id);
+        if(blob) filesFolder.file(m.id+'_'+(m.fileName||'file'), blob);
+      }catch(e){ /* skip a corrupt/missing file rather than fail the whole backup */ }
+      done++;
+      btn.textContent=`Packing… ${done}/${withFiles.length}`;
+    }
+
+    zip.file('manifest.json', JSON.stringify({
+      app:'ClassTrack', version:3, exportedAt:new Date().toISOString(),
+      fileCount: withFiles.length
+    }, null, 2));
+
+    const content = await zip.generateAsync({type:'blob'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(content);
+    a.download=`classtrack_backup_${todayStr()}.ctbackup`;
+    a.click();
+    toast(`Backup saved — ${withFiles.length} file${withFiles.length===1?'':'s'} included 💾`);
+  }catch(e){
+    toast('Backup failed: '+e.message,'⚠️');
+  }finally{
+    btn.textContent='⬇ Backup Everything'; btn.disabled=false;
+  }
+});
+
+document.getElementById('importTrigger').addEventListener('click',()=>document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const btn=document.getElementById('importTrigger');
+  btn.textContent='Restoring…'; btn.disabled=true;
+
+  try{
+    // Plain .json files (old-style exports without files) still work for backward compatibility
+    if(f.name.endsWith('.json')){
+      const text = await f.text();
+      const parsed = JSON.parse(text);
+      Object.assign(state, parsed);
+      save(); renderAll();
+      toast('Data restored (no files in this backup) ✓');
+      return;
+    }
+
+    if(typeof JSZip==='undefined'){
+      toast('Restore library failed to load — check your internet connection','⚠️');
+      return;
+    }
+
+    const zip = await JSZip.loadAsync(f);
+    const dataFile = zip.file('data.json');
+    const matFile  = zip.file('materials.json');
+    if(!dataFile){ toast('Not a valid ClassTrack backup','⚠️'); return; }
+
+    const parsedState = JSON.parse(await dataFile.async('string'));
+    const parsedMat    = matFile ? JSON.parse(await matFile.async('string')) : [];
+
+    Object.assign(state, parsedState);
+    matMeta = parsedMat;
+
+    const filesFolder = zip.folder('files');
+    let restored=0;
+    const fileEntries = Object.keys(zip.files).filter(p=>p.startsWith('files/') && !zip.files[p].dir);
+    for(const path of fileEntries){
+      const id = path.split('/')[1].split('_')[0];
+      const blob = await zip.files[path].async('blob');
+      await dbPutFile(id, blob);
+      restored++;
+    }
+
+    save(); saveMatMeta(); renderAll();
+    if(activeView==='materials') renderMaterials();
+    toast(`Backup restored — ${restored} file${restored===1?'':'s'} recovered ✓`);
+  }catch(err){
+    toast('Invalid or corrupted backup file ✗','⚠️');
+  }finally{
+    btn.textContent='⬆ Restore Backup'; btn.disabled=false;
+    e.target.value='';
+  }
+});
+
+// ─── COURSES ─────────────────────────────────────────────────────────────────
+let editCourseId = null;
+let selectedCourseColor = COLORS[0];
+
+function renderCourseColorPicker(){
+  const wrap = document.getElementById('coursePicker');
+  if(!wrap) return;
+  wrap.innerHTML = COLORS.map(c=>`<div class="col-opt${c===selectedCourseColor?' sel':''}" style="background:${c}" data-c="${c}"></div>`).join('');
+  wrap.querySelectorAll('.col-opt').forEach(o=>o.addEventListener('click',()=>{selectedCourseColor=o.dataset.c;renderCourseColorPicker();}));
+}
+
+function attendanceRateForCourse(code){
+  const cls = state.classes.filter(c=>c.code===code);
+  if(!cls.length) return null;
+  const today = todayStr();
+  // count distinct days this course has had sessions (rough: all past days from attendance logs)
+  let totalSessions = 0, attended = 0;
+  cls.forEach(c=>{
+    const log = (state.attendance[c.id]||[]);
+    // count logged days as attended, estimate sessions from class existence (simplification for offline)
+    attended += log.length;
+    totalSessions += log.length; // we only know attended sessions; show % of attended vs target
+  });
+  return attended;
+}
+
+function renderCourses(){
+  const grid = document.getElementById('courseGrid');
+  if(!grid) return;
+  if(!state.courses.length){
+    grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="width:48px;height:48px;opacity:.25;margin-bottom:10px"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg><p>No courses yet</p><small>Tap Add to create one</small></div>`;
+    return;
+  }
+  grid.innerHTML = state.courses.map(c=>{
+    const matCount = matMeta.filter(m=>m.course===c.code).length;
+    const dlCount  = state.deadlines.filter(d=>d.course===c.code&&!d.completed).length;
+    const classes  = state.classes.filter(cl=>cl.code===c.code);
+    // attendance rate from logs
+    let attDays=0;
+    classes.forEach(cl=>attDays+=(state.attendance[cl.id]||[]).length);
+    const target = c.attendanceTarget||75;
+    const barPct = Math.min(100, attDays>0?Math.round((attDays/(Math.max(1,classes.length*4)))*100):0);
+    return `<div class="course-card" style="--cc:${c.color}" data-id="${c.id}">
+      <div class="cc-code">${esc(c.code)}</div>
+      <div class="cc-name">${esc(c.name)}</div>
+      <div class="cc-bar-wrap"><div class="cc-bar" style="width:${barPct}%"></div></div>
+      <div class="cc-meta">
+        <span>${c.credits||3} cr</span>
+        <span>${matCount} file${matCount!==1?'s':''}${dlCount?` · ${dlCount} due`:''}</span>
+      </div>
+      <div class="cc-actions">
+        <button class="c-btn" onclick="event.stopPropagation();openEditCourse('${c.id}')" aria-label="Edit ${esc(c.code)}">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.course-card').forEach(card=>{
+    card.addEventListener('click',()=>openCourseDetail(card.dataset.id));
+    makeKeyAccessible(card, `Open ${state.courses.find(c=>c.id===card.dataset.id)?.code} course details`);
+  });
+}
+
+function openAddCourse(){
+  editCourseId=null;
+  selectedCourseColor=COLORS[Math.floor(Math.random()*COLORS.length)];
+  document.getElementById('courseModalTitle').textContent='Add Course';
+  document.getElementById('courseSubmit').textContent='Add Course';
+  document.getElementById('courseDelete').style.display='none';
+  ['c-code','c-name','c-instructor','c-venue','c-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('c-credits').value=3;
+  document.getElementById('c-target').value=75;
+  renderCourseColorPicker();
+  document.getElementById('courseOverlay').classList.add('open');
+}
+
+window.openEditCourse = function(id){
+  const c = state.courses.find(x=>x.id===id); if(!c)return;
+  editCourseId=id;
+  selectedCourseColor=c.color;
+  document.getElementById('courseModalTitle').textContent='Edit Course';
+  document.getElementById('courseSubmit').textContent='Save Changes';
+  document.getElementById('courseDelete').style.display='block';
+  document.getElementById('c-code').value=c.code;
+  document.getElementById('c-name').value=c.name;
+  document.getElementById('c-instructor').value=c.instructor||'';
+  document.getElementById('c-venue').value=c.venue||'';
+  document.getElementById('c-credits').value=c.credits||3;
+  document.getElementById('c-target').value=c.attendanceTarget||75;
+  document.getElementById('c-notes').value=c.notes||'';
+  renderCourseColorPicker();
+  document.getElementById('courseOverlay').classList.add('open');
+};
+
+function openCourseDetail(id){
+  const c = state.courses.find(x=>x.id===id); if(!c) return;
+  document.getElementById('cdTitle').textContent=`${c.code} — ${c.name}`;
+  const classes = state.classes.filter(cl=>cl.code===c.code);
+  let attDays=0; classes.forEach(cl=>attDays+=(state.attendance[cl.id]||[]).length);
+  const mats  = matMeta.filter(m=>m.course===c.code);
+  const dls   = state.deadlines.filter(d=>d.course===c.code&&!d.completed);
+  const exams = state.exams.filter(e=>e.courseCode===c.code);
+  const sessions = state.studySessions.filter(s=>s.courseCode===c.code);
+  const totalStudyMins = sessions.reduce((a,s)=>a+(s.actualMins||0),0);
+  document.getElementById('cdBody').innerHTML=`
+    <div class="cd-stat-row">
+      <div class="cd-stat"><div class="cd-stat-val" style="color:${c.color}">${attDays}</div><div class="cd-stat-lbl">Days Attended</div></div>
+      <div class="cd-stat"><div class="cd-stat-val">${mats.length}</div><div class="cd-stat-lbl">Materials</div></div>
+      <div class="cd-stat"><div class="cd-stat-val">${Math.round(totalStudyMins/60*10)/10}h</div><div class="cd-stat-lbl">Study Time</div></div>
+    </div>
+    <div class="cd-section">
+      <h4>Course Info</h4>
+      ${c.instructor?`<div class="cd-row"><span>Instructor</span><span style="font-weight:600">${esc(c.instructor)}</span></div>`:''}
+      ${c.venue?`<div class="cd-row"><span>Venue</span><span style="font-weight:600">${esc(c.venue)}</span></div>`:''}
+      <div class="cd-row"><span>Credits</span><span style="font-family:var(--f-mono);font-weight:600">${c.credits||3}</span></div>
+      <div class="cd-row"><span>Attendance Target</span><span style="font-family:var(--f-mono);font-weight:600">${c.attendanceTarget||75}%</span></div>
+      ${c.notes?`<div class="cd-row"><span>Note</span><span style="color:var(--gold);font-size:.82rem">${esc(c.notes)}</span></div>`:''}
+    </div>
+    ${dls.length?`<div class="cd-section"><h4>Open Deadlines (${dls.length})</h4>${dls.map(d=>`<div class="cd-row"><span>${esc(d.title)}</span><span style="font-family:var(--f-mono);font-size:.75rem;color:var(--text-2)">${fmtDate(d.date)}</span></div>`).join('')}</div>`:''}
+    ${exams.length?`<div class="cd-section"><h4>Exams (${exams.length})</h4>${exams.map(e=>`<div class="cd-row"><span>${esc(e.title)}</span><span style="font-family:var(--f-mono);font-size:.75rem;color:var(--gold)">${Math.round(e.revisionProgress||0)}% ready</span></div>`).join('')}</div>`:''}
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="add-dl-btn" onclick="openCourseMaterials('${c.code}')">📎 View Files</button>
+      <button class="add-dl-btn" style="background:var(--surface-3)" onclick="switchView('study')">📖 Study Session</button>
+    </div>`;
+  document.getElementById('cdEdit').onclick=()=>{document.getElementById('courseDetailOverlay').classList.remove('open');openEditCourse(id);};
+  document.getElementById('courseDetailOverlay').classList.add('open');
+}
+
+document.getElementById('courseSubmit').addEventListener('click',()=>{
+  const code=document.getElementById('c-code').value.trim();
+  const name=document.getElementById('c-name').value.trim();
+  document.getElementById('err-c-code').classList.remove('show');
+  document.getElementById('err-c-name').classList.remove('show');
+  let ok=true;
+  if(!code){document.getElementById('err-c-code').classList.add('show');ok=false;}
+  if(!name){document.getElementById('err-c-name').classList.add('show');ok=false;}
+  if(!ok)return;
+  const course={
+    id:editCourseId||'crs'+Date.now(), code, name,
+    credits:parseInt(document.getElementById('c-credits').value)||3,
+    instructor:document.getElementById('c-instructor').value.trim(),
+    venue:document.getElementById('c-venue').value.trim(),
+    attendanceTarget:parseInt(document.getElementById('c-target').value)||75,
+    notes:document.getElementById('c-notes').value.trim(),
+    color:selectedCourseColor
+  };
+  if(editCourseId){ const i=state.courses.findIndex(c=>c.id===editCourseId); state.courses[i]={...state.courses[i],...course}; toast('Course updated'); }
+  else { state.courses.push(course); toast('Course added 📚'); }
+  save(); document.getElementById('courseOverlay').classList.remove('open');
+  renderCourses(); populateCourseDropdowns();
+});
+document.getElementById('courseDelete').addEventListener('click',()=>{
+  const c=state.courses.find(x=>x.id===editCourseId);
+  confirm_('Delete Course',`Remove "${c?.name}"? This won't delete its classes or materials.`,()=>{
+    state.courses=state.courses.filter(x=>x.id!==editCourseId);
+    save(); document.getElementById('courseOverlay').classList.remove('open');
+    renderCourses(); populateCourseDropdowns(); toast('Course removed','🗑️');
+  });
+});
+document.getElementById('courseClose').addEventListener('click',()=>document.getElementById('courseOverlay').classList.remove('open'));
+document.getElementById('courseOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById('courseOverlay').classList.remove('open');});
+document.getElementById('cdClose').addEventListener('click',()=>document.getElementById('courseDetailOverlay').classList.remove('open'));
+document.getElementById('courseDetailOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById('courseDetailOverlay').classList.remove('open');});
+document.getElementById('openAddCourseBtn')?.addEventListener('click',openAddCourse);
+
+function populateCourseDropdowns(){
+  const codes = state.courses.length
+    ? state.courses.map(c=>`<option value="${esc(c.code)}">${esc(c.code)} — ${esc(c.name)}</option>`).join('')
+    : state.classes.filter((c,i,a)=>a.findIndex(x=>x.code===c.code)===i).map(c=>`<option value="${esc(c.code)}">${esc(c.code)}</option>`).join('');
+  ['st-course','ex-course','n-course','dl-course','matCourseFilter','noteCourseFilter'].forEach(id=>{
+    const el=document.getElementById(id); if(!el)return;
+    const cur=el.value;
+    const prefix = id.includes('Filter')?'<option value="">All Courses</option>':'<option value="">— none —</option>';
+    el.innerHTML=prefix+codes;
+    if(cur)el.value=cur;
+  });
+  // also populate pomodoro course select
+  const pcs=document.getElementById('pomoCourseSel');
+  if(pcs){ pcs.innerHTML='<option value="">No course</option>'+codes; }
+}
+
+// ─── EXAMS ────────────────────────────────────────────────────────────────────
+let editExamId=null;
+
+function renderExamCards(containerId){
+  const list=document.getElementById(containerId); if(!list)return;
+  const now=new Date();
+  const sorted=[...state.exams].sort((a,b)=>new Date(a.examAt)-new Date(b.examAt));
+  if(!sorted.length){list.innerHTML=`<div class="empty"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="width:44px;height:44px;opacity:.25;margin-bottom:10px"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>No exams added yet</p><small>Add an exam to track your revision progress</small></div>`;return;}
+  list.innerHTML=sorted.map(ex=>{
+    const due=new Date(ex.examAt);
+    const days=Math.ceil((due-now)/86400000);
+    const pct=ex.revisionProgress||0;
+    const diffClass=`exam-diff-${ex.difficulty||'moderate'}`;
+    const diffLabel=ex.difficulty==='easy'?'🟢 Easy':ex.difficulty==='hard'?'🔴 Hard':'🟡 Moderate';
+    return `<div class="exam-card" data-id="${ex.id}">
+      <div class="exam-top">
+        <div>
+          <div class="exam-title">${esc(ex.title)}</div>
+          <div style="font-size:.75rem;color:var(--text-2);margin-top:3px;font-family:var(--f-mono)">${ex.courseCode?esc(ex.courseCode)+' · ':''} ${fmtDate(ex.examAt.split('T')[0])} ${days>=0?`· in ${days}d`:'· Past'}</div>
+          ${ex.location?`<div style="font-size:.72rem;color:var(--text-2);margin-top:2px">📍 ${esc(ex.location)}</div>`:''}
+        </div>
+        <span class="exam-badge ${diffClass}">${diffLabel}</span>
+      </div>
+      <div class="exam-progress-row">
+        <span class="exam-prog-label">Revision</span>
+        <div class="exam-prog-bar"><div class="exam-prog-fill" style="width:${pct}%"></div></div>
+        <span class="exam-prog-pct">${pct}%</span>
+      </div>
+      ${ex.totalTopics>1?`<div style="font-size:.7rem;color:var(--text-2);margin-top:5px;font-family:var(--f-mono)">${ex.completedTopics||0}/${ex.totalTopics} topics</div>`:''}
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.exam-card').forEach(c=>{
+    c.addEventListener('click',()=>openEditExam(c.dataset.id));
+    makeKeyAccessible(c,`Edit exam ${state.exams.find(e=>e.id===c.dataset.id)?.title}`);
+  });
+}
+
+function openAddExam(){
+  editExamId=null;
+  document.getElementById('examModalTitle').textContent='Add Exam';
+  document.getElementById('examSubmit').textContent='Add Exam';
+  document.getElementById('examDelete').style.display='none';
+  ['ex-title','ex-loc','ex-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ex-date').value='';
+  document.getElementById('ex-diff').value='moderate';
+  document.getElementById('ex-done').value=0;
+  document.getElementById('ex-total').value=10;
+  document.getElementById('ex-rev').value=0;
+  document.getElementById('ex-rev-val').textContent='0%';
+  populateCourseDropdowns();
+  document.getElementById('examOverlay').classList.add('open');
+}
+
+window.openEditExam=function(id){
+  const ex=state.exams.find(e=>e.id===id); if(!ex)return;
+  editExamId=id;
+  document.getElementById('examModalTitle').textContent='Edit Exam';
+  document.getElementById('examSubmit').textContent='Save';
+  document.getElementById('examDelete').style.display='block';
+  document.getElementById('ex-title').value=ex.title;
+  document.getElementById('ex-date').value=ex.examAt?ex.examAt.slice(0,16):'';
+  document.getElementById('ex-diff').value=ex.difficulty||'moderate';
+  document.getElementById('ex-loc').value=ex.location||'';
+  document.getElementById('ex-done').value=ex.completedTopics||0;
+  document.getElementById('ex-total').value=ex.totalTopics||10;
+  document.getElementById('ex-rev').value=ex.revisionProgress||0;
+  document.getElementById('ex-rev-val').textContent=(ex.revisionProgress||0)+'%';
+  document.getElementById('ex-notes').value=ex.notes||'';
+  populateCourseDropdowns();
+  document.getElementById('ex-course').value=ex.courseCode||'';
+  document.getElementById('examOverlay').classList.add('open');
+};
+
+document.getElementById('ex-rev')?.addEventListener('input',function(){ document.getElementById('ex-rev-val').textContent=this.value+'%'; });
+
+document.getElementById('examSubmit').addEventListener('click',()=>{
+  const title=document.getElementById('ex-title').value.trim();
+  const date=document.getElementById('ex-date').value;
+  let ok=true;
+  ['err-ex-title','err-ex-date'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  if(!title){document.getElementById('err-ex-title').classList.add('show');ok=false;}
+  if(!date){document.getElementById('err-ex-date').classList.add('show');ok=false;}
+  if(!ok)return;
+  const exam={
+    id:editExamId||'ex'+Date.now(),title,
+    examAt:new Date(date).toISOString(),
+    courseCode:document.getElementById('ex-course').value,
+    difficulty:document.getElementById('ex-diff').value,
+    location:document.getElementById('ex-loc').value.trim(),
+    completedTopics:parseInt(document.getElementById('ex-done').value)||0,
+    totalTopics:parseInt(document.getElementById('ex-total').value)||10,
+    revisionProgress:parseInt(document.getElementById('ex-rev').value)||0,
+    notes:document.getElementById('ex-notes').value.trim()
+  };
+  if(editExamId){const i=state.exams.findIndex(e=>e.id===editExamId);state.exams[i]={...state.exams[i],...exam};toast('Exam updated');}
+  else{state.exams.push(exam);toast('Exam added 🎓');}
+  save();document.getElementById('examOverlay').classList.remove('open');
+  renderExamCards('examPlannerList'); renderCombinedTasks();
+});
+document.getElementById('examDelete').addEventListener('click',()=>{
+  const ex=state.exams.find(e=>e.id===editExamId);
+  confirm_('Delete Exam',`Remove "${ex?.title}"?`,()=>{
+    state.exams=state.exams.filter(e=>e.id!==editExamId);
+    save();document.getElementById('examOverlay').classList.remove('open');
+    renderExamCards('examPlannerList');renderCombinedTasks();toast('Exam removed','🗑️');
+  });
+});
+document.getElementById('examClose').addEventListener('click',()=>document.getElementById('examOverlay').classList.remove('open'));
+document.getElementById('examOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById('examOverlay').classList.remove('open');});
+document.getElementById('addExamBtn')?.addEventListener('click',openAddExam);
+document.getElementById('openAddExamBtn2')?.addEventListener('click',openAddExam);
+
+// combined tasks view renders both deadlines and exams together sorted by date
+function renderCombinedTasks(){
+  renderDeadlines();
+  // inject exam entries into dlList after deadlines
+  const list=document.getElementById('dlList');
+  const now=new Date();
+  const sorted=[...state.exams].sort((a,b)=>new Date(a.examAt)-new Date(b.examAt));
+  if(!sorted.length)return;
+  const examHtml=sorted.map(ex=>{
+    const due=new Date(ex.examAt);
+    const days=Math.ceil((due-now)/86400000);
+    const past=days<0;
+    const badge=past?'<span class="dl-badge urgent">Past</span>':days<3?`<span class="dl-badge urgent">${days}d</span>`:days<7?`<span class="dl-badge soon">${days}d</span>`:`<span class="dl-badge later">${days}d</span>`;
+    return `<div class="dl-card" style="--dl-color:var(--gold)" data-exam-id="${ex.id}">
+      <div class="dl-icon">🎓</div>
+      <div class="dl-body">
+        <div class="dl-title">${esc(ex.title)}</div>
+        <div class="dl-meta">${ex.courseCode?`<span>${esc(ex.courseCode)}</span>`:''}<span>${fmtDate(ex.examAt.split('T')[0])}</span>${badge}</div>
+        <div style="margin-top:6px">
+          <div class="exam-prog-bar" style="height:4px"><div class="exam-prog-fill" style="width:${ex.revisionProgress||0}%"></div></div>
+          <div style="font-family:var(--f-mono);font-size:.68rem;color:var(--teal);margin-top:3px">${ex.revisionProgress||0}% revised</div>
+        </div>
+      </div>
+      <div class="dl-actions">
+        <button class="c-btn" onclick="event.stopPropagation();openEditExam('${ex.id}')" aria-label="Edit exam">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+  if(examHtml) list.innerHTML+=`<div style="margin-top:16px"><div class="sched-hdr"><h2 style="font-family:var(--f-display);font-size:1rem">Exams</h2></div>${examHtml}</div>`;
+}
+
+// ─── STUDY / POMODORO ─────────────────────────────────────────────────────────
+let editStudyId=null;
+let pomoRunning=false;
+let pomoTotalSecs=25*60;
+let pomoRemainSecs=25*60;
+let pomoInterval=null;
+
+function pomoRender(){
+  const m=Math.floor(pomoRemainSecs/60), s=pomoRemainSecs%60;
+  document.getElementById('pomoTime').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const pct=1-(pomoRemainSecs/pomoTotalSecs);
+  const circ=326.7;
+  document.getElementById('pomoRingFill').style.strokeDashoffset=circ-(circ*pct);
+}
+
+function pomoSetMode(mins){
+  clearInterval(pomoInterval); pomoRunning=false;
+  pomoTotalSecs=mins*60; pomoRemainSecs=mins*60;
+  document.getElementById('pomoBtnStart').textContent='▶ Start';
+  document.getElementById('pomoLabel').textContent=mins===25?'FOCUS':mins===5?'SHORT BREAK':'LONG BREAK';
+  document.querySelectorAll('.pomo-mode').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.mins)===mins));
+  pomoRender();
+}
+
+document.getElementById('pomoBtnStart').addEventListener('click',()=>{
+  if(pomoRunning){ clearInterval(pomoInterval); pomoRunning=false; document.getElementById('pomoBtnStart').textContent='▶ Resume'; }
+  else{
+    if(pomoRemainSecs<=0) pomoRemainSecs=pomoTotalSecs;
+    pomoRunning=true; document.getElementById('pomoBtnStart').textContent='⏸ Pause';
+    pomoInterval=setInterval(()=>{
+      pomoRemainSecs--;
+      if(pomoRemainSecs<=0){
+        clearInterval(pomoInterval); pomoRunning=false;
+        document.getElementById('pomoBtnStart').textContent='▶ Start';
+        fireNotification('Pomodoro complete!','Time for a break 🎉');
+        pomoRemainSecs=0;
+      }
+      pomoRender();
+    },1000);
+  }
+});
+document.getElementById('pomoBtnReset').addEventListener('click',()=>pomoSetMode(pomoTotalSecs/60));
+document.querySelectorAll('.pomo-mode').forEach(b=>b.addEventListener('click',()=>pomoSetMode(parseInt(b.dataset.mins))));
+pomoRender();
+
+function renderStudySessions(){
+  const list=document.getElementById('studyList'); if(!list)return;
+  const sorted=[...state.studySessions].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(!sorted.length){list.innerHTML=`<div class="empty"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="width:44px;height:44px;opacity:.25;margin-bottom:10px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><p>No sessions logged yet</p><small>Use the timer above, then log your session</small></div>`;return;}
+  list.innerHTML=sorted.map(s=>{
+    const eff=s.actualMins&&s.plannedMins?Math.round((s.actualMins/s.plannedMins)*100):0;
+    return `<div class="study-card" data-id="${s.id}">
+      <div style="font-size:1.4rem">📖</div>
+      <div class="focus-bar-wrap">
+        <div style="font-weight:700;font-size:.92rem;margin-bottom:3px">${esc(s.title)}</div>
+        <div class="study-meta">
+          ${s.courseCode?`<span style="color:var(--teal);font-weight:700">${esc(s.courseCode)}</span>`:''}
+          <span>${fmtDate(s.date)}</span>
+          <span style="font-family:var(--f-mono)">${s.actualMins||0}/${s.plannedMins||50} min</span>
+          <span>🍅 ${s.pomodoroCount||1}</span>
+        </div>
+        <div class="focus-bar-bg" style="margin-top:7px"><div class="focus-bar" style="width:${Math.min(100,s.focusScore||80)}%"></div></div>
+        <div style="font-family:var(--f-mono);font-size:.68rem;color:var(--text-2);margin-top:3px">Focus ${s.focusScore||80}% · Efficiency ${eff}%</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+        <button class="c-btn" onclick="openEditStudy('${s.id}')" aria-label="Edit session">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </button>
+        <button class="c-btn del" onclick="deleteStudy('${s.id}')" aria-label="Delete session">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAddStudy(){
+  editStudyId=null;
+  document.getElementById('studyModalTitle').textContent='Log Study Session';
+  document.getElementById('studySubmit').textContent='Save Session';
+  document.getElementById('studyDelete').style.display='none';
+  document.getElementById('st-title').value='';
+  document.getElementById('st-date').value=todayStr();
+  document.getElementById('st-planned').value=pomoTotalSecs/60;
+  document.getElementById('st-actual').value=Math.max(0,Math.round((pomoTotalSecs-pomoRemainSecs)/60));
+  document.getElementById('st-pomos').value=2;
+  document.getElementById('st-focus').value=80;
+  document.getElementById('st-notes').value='';
+  populateCourseDropdowns();
+  const cs=document.getElementById('st-course');
+  const pomoSel=document.getElementById('pomoCourseSel');
+  if(pomoSel?.value&&cs)cs.value=pomoSel.value;
+  document.getElementById('studyOverlay').classList.add('open');
+}
+
+window.openEditStudy=function(id){
+  const s=state.studySessions.find(x=>x.id===id);if(!s)return;
+  editStudyId=id;
+  document.getElementById('studyModalTitle').textContent='Edit Session';
+  document.getElementById('studySubmit').textContent='Save';
+  document.getElementById('studyDelete').style.display='block';
+  document.getElementById('st-title').value=s.title;
+  document.getElementById('st-date').value=s.date;
+  document.getElementById('st-planned').value=s.plannedMins||50;
+  document.getElementById('st-actual').value=s.actualMins||0;
+  document.getElementById('st-pomos').value=s.pomodoroCount||2;
+  document.getElementById('st-focus').value=s.focusScore||80;
+  document.getElementById('st-notes').value=s.notes||'';
+  populateCourseDropdowns();
+  document.getElementById('st-course').value=s.courseCode||'';
+  document.getElementById('studyOverlay').classList.add('open');
+};
+
+window.deleteStudy=function(id){
+  confirm_('Delete Session','Remove this study session?',()=>{
+    state.studySessions=state.studySessions.filter(s=>s.id!==id);
+    save();renderStudySessions();updateStats();toast('Session removed','🗑️');
+  });
+};
+
+document.getElementById('studySubmit').addEventListener('click',()=>{
+  const title=document.getElementById('st-title').value.trim();
+  const date=document.getElementById('st-date').value;
+  document.getElementById('err-st-title').classList.remove('show');
+  document.getElementById('err-st-date').classList.remove('show');
+  let ok=true;
+  if(!title){document.getElementById('err-st-title').classList.add('show');ok=false;}
+  if(!date){document.getElementById('err-st-date').classList.add('show');ok=false;}
+  if(!ok)return;
+  const sess={
+    id:editStudyId||'st'+Date.now(),title,date,
+    courseCode:document.getElementById('st-course').value,
+    plannedMins:parseInt(document.getElementById('st-planned').value)||50,
+    actualMins:parseInt(document.getElementById('st-actual').value)||0,
+    pomodoroCount:parseInt(document.getElementById('st-pomos').value)||2,
+    focusScore:parseInt(document.getElementById('st-focus').value)||80,
+    notes:document.getElementById('st-notes').value.trim()
+  };
+  if(editStudyId){const i=state.studySessions.findIndex(s=>s.id===editStudyId);state.studySessions[i]={...state.studySessions[i],...sess};}
+  else state.studySessions.push(sess);
+  save();document.getElementById('studyOverlay').classList.remove('open');
+  renderStudySessions();updateStats();toast('Session saved 🍅');
+});
+document.getElementById('studyDelete').addEventListener('click',()=>{window.deleteStudy(editStudyId);document.getElementById('studyOverlay').classList.remove('open');});
+document.getElementById('studyClose').addEventListener('click',()=>document.getElementById('studyOverlay').classList.remove('open'));
+document.getElementById('studyOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById('studyOverlay').classList.remove('open');});
+document.getElementById('openAddStudyBtn')?.addEventListener('click',openAddStudy);
+
+// ─── NOTES ────────────────────────────────────────────────────────────────────
+let editNoteId=null;
+
+function renderNotes(){
+  const list=document.getElementById('noteList'); if(!list)return;
+  const courseF=document.getElementById('noteCourseFilter')?.value||'';
+  const search=(document.getElementById('noteSearch')?.value||'').toLowerCase();
+  let filtered=[...state.classNotes].sort((a,b)=>{
+    if(a.pinned&&!b.pinned)return -1; if(!a.pinned&&b.pinned)return 1;
+    return new Date(b.date||0)-new Date(a.date||0);
+  });
+  if(courseF)filtered=filtered.filter(n=>n.courseCode===courseF);
+  if(search)filtered=filtered.filter(n=>(n.title+n.body).toLowerCase().includes(search));
+  if(!filtered.length){list.innerHTML=`<div class="empty"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="width:44px;height:44px;opacity:.25;margin-bottom:10px"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg><p>No notes yet</p><small>Jot down key points from each session</small></div>`;return;}
+  list.innerHTML=filtered.map(n=>`<div class="note-card${n.pinned?' pinned':''}" data-id="${n.id}">
+    <div class="note-title">${esc(n.title)}</div>
+    <div class="note-preview">${esc((n.body||'').replace(/\n/g,' ')).slice(0,100)||'(no content)'}</div>
+    <div class="note-meta">
+      ${n.courseCode?`<span style="color:var(--teal)">${esc(n.courseCode)}</span>`:''}
+      ${n.date?`<span>${fmtDate(n.date)}</span>`:''}
+    </div>
+  </div>`).join('');
+  list.querySelectorAll('.note-card').forEach(c=>{
+    c.addEventListener('click',()=>openEditNote(c.dataset.id));
+    makeKeyAccessible(c,'Open note');
+  });
+}
+
+function openAddNote(prefillCourse=''){
+  editNoteId=null;
+  document.getElementById('noteModalTitle').textContent='New Note';
+  document.getElementById('noteSubmit').textContent='Save Note';
+  document.getElementById('noteDelete').style.display='none';
+  document.getElementById('n-title').value='';
+  document.getElementById('n-body').value='';
+  document.getElementById('n-date').value=todayStr();
+  document.getElementById('n-pinned').checked=false;
+  populateCourseDropdowns();
+  if(prefillCourse)document.getElementById('n-course').value=prefillCourse;
+  document.getElementById('noteOverlay').classList.add('open');
+}
+
+window.openEditNote=function(id){
+  const n=state.classNotes.find(x=>x.id===id);if(!n)return;
+  editNoteId=id;
+  document.getElementById('noteModalTitle').textContent='Edit Note';
+  document.getElementById('noteSubmit').textContent='Save';
+  document.getElementById('noteDelete').style.display='block';
+  document.getElementById('n-title').value=n.title;
+  document.getElementById('n-body').value=n.body||'';
+  document.getElementById('n-date').value=n.date||todayStr();
+  document.getElementById('n-pinned').checked=!!n.pinned;
+  populateCourseDropdowns();
+  document.getElementById('n-course').value=n.courseCode||'';
+  document.getElementById('noteOverlay').classList.add('open');
+};
+
+document.getElementById('noteSubmit').addEventListener('click',()=>{
+  const title=document.getElementById('n-title').value.trim();
+  document.getElementById('err-n-title').classList.remove('show');
+  if(!title){document.getElementById('err-n-title').classList.add('show');return;}
+  const note={
+    id:editNoteId||'nt'+Date.now(),title,
+    body:document.getElementById('n-body').value.trim(),
+    courseCode:document.getElementById('n-course').value,
+    date:document.getElementById('n-date').value||todayStr(),
+    pinned:document.getElementById('n-pinned').checked
+  };
+  if(editNoteId){const i=state.classNotes.findIndex(n=>n.id===editNoteId);state.classNotes[i]={...state.classNotes[i],...note};}
+  else state.classNotes.push(note);
+  save();document.getElementById('noteOverlay').classList.remove('open');
+  renderNotes();toast(editNoteId?'Note updated':'Note saved 📝');
+});
+document.getElementById('noteDelete').addEventListener('click',()=>{
+  confirm_('Delete Note','Remove this note?',()=>{
+    state.classNotes=state.classNotes.filter(n=>n.id!==editNoteId);
+    save();document.getElementById('noteOverlay').classList.remove('open');
+    renderNotes();toast('Note removed','🗑️');
+  });
+});
+document.getElementById('noteClose').addEventListener('click',()=>document.getElementById('noteOverlay').classList.remove('open'));
+document.getElementById('noteOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById('noteOverlay').classList.remove('open');});
+document.getElementById('openAddNoteBtn')?.addEventListener('click',()=>openAddNote());
+document.getElementById('noteCourseFilter')?.addEventListener('change',renderNotes);
+document.getElementById('noteSearch')?.addEventListener('input',renderNotes);
+
+// ─── MORE VIEW TABS ───────────────────────────────────────────────────────────
+let activeMoreSub='week';
+function switchMoreSub(sub){
+  activeMoreSub=sub;
+  ['week','notes','exams'].forEach(s=>{
+    const el=document.getElementById('sub-'+s); if(el) el.style.display=s===sub?'block':'none';
+  });
+  document.querySelectorAll('.more-tab').forEach(t=>t.classList.toggle('active',t.dataset.sub===sub));
+  if(sub==='week')renderWeek();
+  if(sub==='notes'){populateCourseDropdowns();renderNotes();}
+  if(sub==='exams')renderExamCards('examPlannerList');
+}
+document.querySelectorAll('.more-tab').forEach(t=>t.addEventListener('click',()=>switchMoreSub(t.dataset.sub)));
+
+// ─── GLOBAL SEARCH ────────────────────────────────────────────────────────────
+let searchTimeout=null;
+const SEARCH_ICONS={course:'📚',deadline:'📋',exam:'🎓',note:'📝',material:'📎',class:'🗓️'};
+
+document.getElementById('globalSearch').addEventListener('input',function(){
+  clearTimeout(searchTimeout);
+  searchTimeout=setTimeout(()=>runSearch(this.value.trim()),200);
+});
+document.getElementById('globalSearch').addEventListener('focus',function(){
+  if(this.value.trim().length>=2)document.getElementById('searchResults').style.display='block';
+});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#searchWrap'))document.getElementById('searchResults').style.display='none';
+});
+
+function runSearch(q){
+  const box=document.getElementById('searchResults');
+  if(!q||q.length<2){box.style.display='none';return;}
+  const results=[];
+  const ql=q.toLowerCase();
+
+  state.courses.filter(c=>(c.code+c.name+c.instructor).toLowerCase().includes(ql))
+    .slice(0,3).forEach(c=>results.push({type:'course',icon:SEARCH_ICONS.course,title:`${c.code} — ${c.name}`,meta:c.instructor||'',action:()=>{switchView('courses');document.getElementById('globalSearch').value='';box.style.display='none';}}));
+
+  state.classes.filter(c=>(c.code+c.name+c.lecturer).toLowerCase().includes(ql))
+    .slice(0,2).forEach(c=>results.push({type:'class',icon:SEARCH_ICONS.class,title:`${c.code} — ${c.name}`,meta:`${c.day} ${fmtTime(c.startTime)}`,action:()=>{activeDay=c.day;switchView('day');renderDayStrip();renderClasses();document.getElementById('globalSearch').value='';box.style.display='none';}}));
+
+  state.deadlines.filter(d=>d.title.toLowerCase().includes(ql))
+    .slice(0,3).forEach(d=>results.push({type:'deadline',icon:SEARCH_ICONS.deadline,title:d.title,meta:fmtDate(d.date),action:()=>{switchView('deadlines');document.getElementById('globalSearch').value='';box.style.display='none';}}));
+
+  state.exams.filter(e=>e.title.toLowerCase().includes(ql))
+    .slice(0,2).forEach(e=>results.push({type:'exam',icon:SEARCH_ICONS.exam,title:e.title,meta:fmtDate(e.examAt.split('T')[0]),action:()=>{switchView('more');switchMoreSub('exams');document.getElementById('globalSearch').value='';box.style.display='none';}}));
+
+  state.classNotes.filter(n=>(n.title+(n.body||'')).toLowerCase().includes(ql))
+    .slice(0,3).forEach(n=>results.push({type:'note',icon:SEARCH_ICONS.note,title:n.title,meta:n.courseCode||'',action:()=>{switchView('more');switchMoreSub('notes');openEditNote(n.id);document.getElementById('globalSearch').value='';box.style.display='none';}}));
+
+  matMeta.filter(m=>(m.title+m.course).toLowerCase().includes(ql))
+    .slice(0,2).forEach(m=>results.push({type:'material',icon:SEARCH_ICONS.material,title:m.title,meta:m.course,action:()=>{switchView('materials');document.getElementById('globalSearch').value='';box.style.display='none';openMaterialViewer(m.id);}}));
+
+  if(!results.length){box.innerHTML=`<div class="search-result-item"><span class="sr-meta">No results for "<strong>${esc(q)}</strong>"</span></div>`;box.style.display='block';return;}
+  box.innerHTML=results.map((r,i)=>`<div class="search-result-item" data-idx="${i}"><span class="sr-icon">${r.icon}</span><div><div class="sr-title">${esc(r.title)}</div>${r.meta?`<div class="sr-meta">${esc(r.meta)}</div>`:''}</div></div>`).join('');
+  box.querySelectorAll('.search-result-item').forEach((el,i)=>el.addEventListener('click',()=>results[i].action()));
+  box.style.display='block';
+}
+
+// ─── VIEW SWITCHING (v4 — all views) ─────────────────────────────────────────
+function switchView(v){
+  activeView=v;
+  const views={
+    day:'dayView', courses:'coursesView', materials:'materialsView',
+    study:'studyView', deadlines:'dlView', more:'moreView', week:'moreView'
+  };
+  // hide all
+  ['dayView','coursesView','materialsView','studyView','dlView','moreView'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none';
+  });
+  const target=document.getElementById(views[v]||'dayView');
+  if(target) target.style.display='block';
+
+  // FAB label
+  const fab=document.getElementById('fab');
+  fab.style.display=v==='more'?'none':'flex';
+  fab.title=v==='materials'?'Upload file':v==='courses'?'Add course':v==='study'?'Log session':v==='deadlines'?'Add task':'Add class';
+
+  // tab highlight — map 'week' to 'more' for nav highlight
+  const navKey=v==='week'?'more':v;
+  document.querySelectorAll('.v-tab').forEach(t=>t.classList.toggle('active',t.dataset.view===navKey));
+
+  if(v==='materials'){populateCourseDropdowns();renderMaterials();}
+  if(v==='courses'){renderCourses();}
+  if(v==='study'){populateCourseDropdowns();renderStudySessions();}
+  if(v==='deadlines'){renderCombinedTasks();}
+  if(v==='more'||v==='week'){
+    if(v==='week'){switchMoreSub('week');}else{switchMoreSub(activeMoreSub);}
+  }
+}
+
+document.querySelectorAll('.v-tab').forEach(t=>{
+  t.addEventListener('click',()=>switchView(t.dataset.view));
+});
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
+const notifyBtn=document.getElementById('notifyBtn');
+
+// Single source of truth for turning reminders on — always goes through permission request.
+async function enableReminders(){
+  if(!('Notification' in window)){ toast('Notifications not supported on this browser','ℹ️'); return false; }
+  if(Notification.permission==='denied'){
+    toast('Notifications blocked — enable them in your browser settings','⚠️');
+    return false;
+  }
+  if(Notification.permission==='default'){
+    const perm = await Notification.requestPermission();
+    if(perm!=='granted'){ toast('Permission not granted','🔕'); return false; }
+  }
+  return true;
+}
+
+notifyBtn.addEventListener('click',async()=>{
+  if(state.settings.reminders){
+    state.settings.reminders=false;
+    notifyBtn.classList.remove('active');
+    save();
+    toast('Reminders off 🔕');
+    return;
+  }
+  const ok = await enableReminders();
+  if(ok){
+    state.settings.reminders=true;
+    notifyBtn.classList.add('active');
+    save();
+    checkNotifications();
+    toast('Reminders on 🔔');
+  }
+});
+
+function getNotifiedSet(){
+  // localStorage (not sessionStorage) so a refresh or new tab doesn't re-fire alerts already sent today
+  const dateKey=todayStr();
+  const raw = localStorage.getItem('ct_notified_'+dateKey);
+  return new Set(raw?JSON.parse(raw):[]);
+}
+function saveNotifiedSet(set){
+  const dateKey=todayStr();
+  localStorage.setItem('ct_notified_'+dateKey, JSON.stringify([...set]));
+  // clean up old days' keys so localStorage doesn't grow forever
+  Object.keys(localStorage).forEach(k=>{
+    if(k.startsWith('ct_notified_') && k!=='ct_notified_'+dateKey) localStorage.removeItem(k);
+  });
+}
+
+// ─── INSTALL PROMPT (PWA "Add to Home Screen") ────────────────────────────────
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById('installBtn');
+  if(btn) btn.style.display = 'block';
+});
+document.getElementById('installBtn')?.addEventListener('click', async ()=>{
+  if(!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  document.getElementById('installBtn').style.display='none';
+  if(outcome==='accepted') toast('Installed — find it on your home screen 📲');
+});
+window.addEventListener('appinstalled', ()=>{
+  const btn = document.getElementById('installBtn');
+  if(btn) btn.style.display='none';
+  toast('ClassTrack installed ✓');
+});
+
+// ─── SERVICE WORKER (PWA install + offline + more reliable notifications) ────
+// Silently does nothing if unsupported or run from file:// — service workers
+// require http(s). Host this folder (e.g. GitHub Pages, Netlify, a local
+// static server) to get install-to-home-screen and offline support.
+let swRegistration = null;
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('./sw.js')
+    .then(reg=>{ swRegistration=reg; })
+    .catch(()=>{ /* not fatal — app still works without it */ });
+}
+
+function fireNotification(title, body){
+  // Prefer routing through the service worker: it can fire even if this tab is
+  // throttled in the background, which a bare `new Notification()` cannot.
+  if(swRegistration && swRegistration.active){
+    swRegistration.active.postMessage({type:'SHOW_NOTIFICATION', title, body});
+    return;
+  }
+  try{
+    const n = new Notification(title, {
+      body,
+      icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="%2300d4aa"/><text x="16" y="21" text-anchor="middle" font-size="16" fill="%23060d0f">📚</text></svg>'
+    });
+    n.onclick = ()=>{ window.focus(); n.close(); };
+  }catch(e){ /* some browsers throw if called from a background tab without a service worker; fail silently */ }
+}
+
+function checkNotifications(){
+  if(!state.settings.reminders) return;
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+
+  const today=todayName();
+  const nm=nowMins();
+  const notifiedSet=getNotifiedSet();
+  let changed=false;
+
+  // Class reminders — widened to a 16-minute catch window so a throttled background
+  // tab checking every 30s still catches the 15-minute mark instead of skipping past it.
+  state.classes.filter(c=>c.day===today).forEach(cls=>{
+    const sm=toMins(cls.startTime);
+    const diff=sm-nm;
+    if(diff>0 && diff<=16 && !notifiedSet.has('cls_'+cls.id)){
+      fireNotification(`Class in ${diff} min`, `${cls.code} — ${cls.name}\n${cls.venue||'Venue TBA'}`);
+      notifiedSet.add('cls_'+cls.id);
+      changed=true;
+    }
+  });
+
+  // Deadline reminders — 24hr-ish window
+  if(state.settings.dlReminders){
+    const now=new Date();
+    state.deadlines.filter(d=>!d.completed).forEach(dl=>{
+      const due=new Date(dl.date+'T'+(dl.time||'23:59'));
+      const hoursLeft=(due-now)/(1000*60*60);
+      const key='dl_'+dl.id;
+      if(hoursLeft>0 && hoursLeft<25 && !notifiedSet.has(key)){
+        fireNotification('Deadline approaching', `${dl.title} due ${fmtDate(dl.date)}${dl.time?' '+fmtTime(dl.time):''}`);
+        notifiedSet.add(key);
+        changed=true;
+      }
+    });
+  }
+
+  if(changed) saveNotifiedSet(notifiedSet);
+}
+
+// ─── WIDGET BUTTONS ───────────────────────────────────────────────────────────
+document.getElementById('wAttend').addEventListener('click',()=>{
+  if(nextClassId) window.markAttend(nextClassId);
+});
+document.getElementById('wSkip').addEventListener('click',()=>{
+  toast('Skipped (no shame, rest up)','😴');
+});
+
+// ─── CONFIRM DIALOG ───────────────────────────────────────────────────────────
+document.getElementById('confirmCancel').addEventListener('click',()=>{
+  document.getElementById('confirmOverlay').classList.remove('open');confirmCb=null;
+});
+document.getElementById('confirmOk').addEventListener('click',()=>{
+  document.getElementById('confirmOverlay').classList.remove('open');
+  if(confirmCb)confirmCb();confirmCb=null;
+});
+document.getElementById('confirmOverlay').addEventListener('click',e=>{
+  if(e.target===e.currentTarget){document.getElementById('confirmOverlay').classList.remove('open');confirmCb=null;}
+});
+
+
+// ─── MATERIALS MODULE ─────────────────────────────────────────────────────────
+// Uses IndexedDB for file blobs + localStorage for metadata
+const MAT_META_KEY = 'classtrack_v3_materials';
+const MAT_DB_NAME  = 'classtrack_files';
+const MAT_DB_VER   = 1;
+const MAT_STORE    = 'files';
+
+const TYPE_ICONS_MAT = {
+  slides: { icon:'📊', color:'#f2994a' },
+  notes:  { icon:'📝', color:'#00e6b8' },
+  lab:    { icon:'🔬', color:'#8e5bb8' },
+  assignment: { icon:'📋', color:'#e8b339' },
+  'past-paper': { icon:'📜', color:'#5b6ee8' }
+};
+
+let matMeta  = [];   // metadata array (from localStorage)
+let matDbObj = null; // IndexedDB instance
+let matActiveWeek = '';
+let matUploadFile = null;
+
+// ── IndexedDB init ────────────────────────────────────────────────────────────
+function openMatDB(){
+  return new Promise((res, rej)=>{
+    const req = indexedDB.open(MAT_DB_NAME, MAT_DB_VER);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(MAT_STORE, {keyPath:'id'});
+    req.onsuccess  = e => res(e.target.result);
+    req.onerror    = e => rej(e.target.error);
+  });
+}
+async function getMatDB(){
+  if(!matDbObj) matDbObj = await openMatDB();
+  return matDbObj;
+}
+function dbPutFile(id, blob){
+  return getMatDB().then(db=>{
+    return new Promise((res,rej)=>{
+      const tx = db.transaction(MAT_STORE,'readwrite');
+      tx.objectStore(MAT_STORE).put({id, blob});
+      tx.oncomplete=()=>res();
+      tx.onerror=e=>rej(e.target.error);
+    });
+  });
+}
+function dbGetFile(id){
+  return getMatDB().then(db=>{
+    return new Promise((res,rej)=>{
+      const req = db.transaction(MAT_STORE,'readonly').objectStore(MAT_STORE).get(id);
+      req.onsuccess = e => res(e.target.result?.blob||null);
+      req.onerror   = e => rej(e.target.error);
+    });
+  });
+}
+function dbDelFile(id){
+  return getMatDB().then(db=>{
+    return new Promise((res,rej)=>{
+      const tx = db.transaction(MAT_STORE,'readwrite');
+      tx.objectStore(MAT_STORE).delete(id);
+      tx.oncomplete=()=>res();
+      tx.onerror=e=>rej(e.target.error);
+    });
+  });
+}
+
+// ── Metadata load/save ────────────────────────────────────────────────────────
+function loadMatMeta(){
+  try{ matMeta = JSON.parse(localStorage.getItem(MAT_META_KEY)||'[]'); }
+  catch(e){ matMeta=[]; }
+}
+function saveMatMeta(){
+  localStorage.setItem(MAT_META_KEY, JSON.stringify(matMeta));
+  updateMatBadge();
+}
+function updateMatBadge(){
+  const cnt = matMeta.length;
+  const b = document.getElementById('matBadge');
+  if(b){ b.textContent=cnt; b.classList.toggle('show',cnt>0); }
+}
+
+// ── Course select populate ────────────────────────────────────────────────────
+// ── Week chips ────────────────────────────────────────────────────────────────
+function renderWeekChips(){
+  const weeks = [...new Set(matMeta.map(m=>m.week).filter(Boolean))].sort((a,b)=>{
+    return parseInt(a.replace(/\D/g,''))-parseInt(b.replace(/\D/g,''));
+  });
+  const wrap = document.getElementById('weekChips');
+  if(!wrap)return;
+  wrap.innerHTML = ['All',...weeks].map(w=>`
+    <button class="wk-chip${(w==='All'&&!matActiveWeek)||w===matActiveWeek?' active':''}" data-week="${w==='All'?'':w}">${w}</button>
+  `).join('');
+  wrap.querySelectorAll('.wk-chip').forEach(c=>{
+    c.addEventListener('click',()=>{ matActiveWeek=c.dataset.week; renderWeekChips(); renderMatGrid(); });
+  });
+}
+
+// ── Render grid ───────────────────────────────────────────────────────────────
+function matCountFor(courseCode){
+  return matMeta.filter(m=>m.course===courseCode).length;
+}
+
+window.openCourseMaterials = function(courseCode){
+  switchView('materials');
+  // give the view a tick to render before applying the filter
+  requestAnimationFrame(()=>{
+    const sel = document.getElementById('matCourseFilter');
+    if(sel){ sel.value = courseCode; renderMatGrid(); }
+  });
+};
+
+function renderMaterials(){
+  populateCourseDropdowns();
+  renderWeekChips();
+  renderMatGrid();
+}
+
+function renderMatGrid(){
+  const courseF = document.getElementById('matCourseFilter')?.value||'';
+  const typeF   = document.getElementById('matTypeFilter')?.value||'';
+  const search  = (document.getElementById('matSearch')?.value||'').toLowerCase();
+  const grid    = document.getElementById('matGrid');
+  if(!grid)return;
+
+  let filtered = matMeta;
+  if(courseF)      filtered = filtered.filter(m=>m.course===courseF);
+  if(typeF)        filtered = filtered.filter(m=>m.type===typeF);
+  if(matActiveWeek)filtered = filtered.filter(m=>m.week===matActiveWeek);
+  if(search)       filtered = filtered.filter(m=>
+    (m.title||'').toLowerCase().includes(search)||
+    (m.course||'').toLowerCase().includes(search)||
+    (m.week||'').toLowerCase().includes(search)
+  );
+
+  if(filtered.length===0){
+    grid.innerHTML=`<div class="empty" style="grid-column:1/-1">
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+      <p>${search||courseF||typeF||matActiveWeek?'No materials match.':'No materials yet.'}</p>
+      <small>Tap Upload to add slides or notes</small>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(m=>{
+    const ti = TYPE_ICONS_MAT[m.type]||{icon:'📄',color:'var(--text-2)'};
+    const hasFile = !!m.hasFile;
+    return `<div class="mat-card" style="--mc:${ti.color}" data-id="${m.id}">
+      <div class="mat-type-icon">${ti.icon}</div>
+      <div class="mat-card-title">${esc(m.title)}</div>
+      <div class="mat-card-course">${esc(m.course)}</div>
+      <div class="mat-card-meta">
+        <span class="mat-badge">${m.week||m.type}</span>
+        ${hasFile?`<svg width="12" height="12" fill="none" stroke="var(--teal)" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`:''}
+        <button class="mat-card-del" onclick="event.stopPropagation();deleteMat('${m.id}')" title="Delete" aria-label="Delete material ${esc(m.title)}">
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.mat-card').forEach(card=>{
+    card.addEventListener('click',()=>openMaterialViewer(card.dataset.id));
+    const mObj = matMeta.find(x=>x.id===card.dataset.id);
+    makeKeyAccessible(card, mObj?`Open ${mObj.title}`:'Open material');
+  });
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+function openUploadModal(){
+  matUploadFile=null;
+  document.getElementById('u-title').value='';
+  document.getElementById('u-week').value='';
+  document.getElementById('u-type').value='slides';
+  document.getElementById('filePreview').style.display='none';
+  document.getElementById('dropZone').style.display='block';
+  document.querySelectorAll('.err-msg').forEach(e=>e.classList.remove('show'));
+  populateCourseDropdowns();
+  document.getElementById('uploadOverlay').classList.add('open');
+}
+function closeUploadModal(){
+  document.getElementById('uploadOverlay').classList.remove('open');
+  matUploadFile=null;
+}
+
+// Wire drop zone
+document.addEventListener('DOMContentLoaded',()=>{
+  const dz = document.getElementById('dropZone');
+  const fi = document.getElementById('u-file');
+  if(!dz||!fi)return;
+  dz.addEventListener('click',()=>fi.click());
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+  dz.addEventListener('drop',e=>{
+    e.preventDefault(); dz.classList.remove('over');
+    const f=e.dataTransfer.files[0]; if(f) setUploadFile(f);
+  });
+  fi.addEventListener('change',e=>{ if(e.target.files[0]) setUploadFile(e.target.files[0]); });
+  document.getElementById('fpClear').addEventListener('click',()=>{
+    matUploadFile=null;
+    document.getElementById('filePreview').style.display='none';
+    document.getElementById('dropZone').style.display='block';
+    fi.value='';
+  });
+  document.getElementById('openUploadBtn')?.addEventListener('click',openUploadModal);
+  document.getElementById('uploadClose')?.addEventListener('click',closeUploadModal);
+  document.getElementById('uploadOverlay')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeUploadModal();});
+  document.getElementById('matCourseFilter')?.addEventListener('change',renderMatGrid);
+  document.getElementById('matTypeFilter')?.addEventListener('change',renderMatGrid);
+  document.getElementById('matSearch')?.addEventListener('input',renderMatGrid);
+});
+
+const FILETYPE_ICONS = {
+  'application/pdf':'📄', 'image/png':'🖼️','image/jpeg':'🖼️','image/gif':'🖼️',
+  'application/vnd.ms-powerpoint':'📊',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation':'📊',
+  'application/msword':'📝',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'📝'
+};
+
+function setUploadFile(f){
+  matUploadFile=f;
+  document.getElementById('dropZone').style.display='none';
+  document.getElementById('filePreview').style.display='flex';
+  document.getElementById('fpIcon').textContent = FILETYPE_ICONS[f.type]||'📎';
+  document.getElementById('fpName').textContent = f.name;
+  document.getElementById('fpSize').textContent = (f.size/1024/1024).toFixed(2)+' MB';
+}
+
+document.getElementById('uploadSubmit')?.addEventListener('click', async ()=>{
+  const title  = document.getElementById('u-title').value.trim();
+  const course = document.getElementById('u-course').value;
+  let ok=true;
+  document.getElementById('err-u-title').classList.remove('show');
+  document.getElementById('err-u-course').classList.remove('show');
+  if(!title){ document.getElementById('err-u-title').classList.add('show'); ok=false; }
+  if(!course){ document.getElementById('err-u-course').classList.add('show'); ok=false; }
+  if(!ok)return;
+
+  const btn=document.getElementById('uploadSubmit');
+  btn.textContent='Saving…'; btn.disabled=true;
+  try{
+    const id='mat'+Date.now();
+    const meta={
+      id, title, course,
+      week:document.getElementById('u-week').value,
+      type:document.getElementById('u-type').value,
+      fileName: matUploadFile?.name||'',
+      fileType: matUploadFile?.type||'',
+      hasFile: !!matUploadFile,
+      addedAt: new Date().toISOString()
+    };
+    if(matUploadFile){
+      await dbPutFile(id, matUploadFile);
+    }
+    matMeta.unshift(meta);
+    saveMatMeta();
+    closeUploadModal();
+    renderMaterials();
+    toast('Material saved 📚');
+  }catch(e){
+    toast('Save failed: '+e.message,'⚠️');
+  }finally{
+    btn.textContent='Upload Material'; btn.disabled=false;
+  }
+});
+
+// ── View / Download ───────────────────────────────────────────────────────────
+async function openMaterialViewer(id){
+  const meta = matMeta.find(m=>m.id===id);
+  if(!meta)return;
+  document.getElementById('viewerTitle').textContent=meta.title;
+  const body=document.getElementById('viewerBody');
+  body.innerHTML=`<div style="padding:20px;color:var(--text-2);text-align:center;font-size:.85rem">Loading…</div>`;
+  document.getElementById('viewerOverlay').classList.add('open');
+
+  if(!meta.hasFile){
+    body.innerHTML=`<div style="padding:30px;text-align:center">
+      <div style="font-size:2.5rem;margin-bottom:10px">${TYPE_ICONS_MAT[meta.type]?.icon||'📄'}</div>
+      <div style="font-weight:700;margin-bottom:6px">${esc(meta.title)}</div>
+      <div style="font-size:.8rem;color:var(--text-2)">${esc(meta.course)}${meta.week?' · '+meta.week:''}</div>
+      <div style="margin-top:16px;font-size:.78rem;color:var(--text-2)">No file attached to this material.</div>
+    </div>`;
+    document.getElementById('viewerDownload').style.display='none';
+    return;
+  }
+
+  try{
+    const blob = await dbGetFile(id);
+    if(!blob){ body.innerHTML=`<div style="padding:20px;text-align:center;color:var(--red)">File not found in storage.</div>`; return; }
+    const url = URL.createObjectURL(blob);
+
+    document.getElementById('viewerDownload').style.display='block';
+    document.getElementById('viewerDownload').onclick=()=>{
+      const a=document.createElement('a'); a.href=url; a.download=meta.fileName||meta.title; a.click();
+    };
+
+    if(blob.type==='application/pdf'){
+      body.innerHTML=`<iframe src="${url}" style="width:100%;height:75vh;border:none;border-radius:8px"></iframe>`;
+    } else if(blob.type.startsWith('image/')){
+      body.innerHTML=`<img src="${url}" style="max-width:100%;border-radius:8px;display:block;margin:0 auto">`;
+    } else {
+      body.innerHTML=`<div style="padding:30px;text-align:center">
+        <div style="font-size:3rem;margin-bottom:12px">${FILETYPE_ICONS[blob.type]||'📎'}</div>
+        <div style="font-weight:700;margin-bottom:6px">${esc(meta.fileName)}</div>
+        <div style="font-size:.78rem;color:var(--text-2);margin-bottom:20px">${(blob.size/1024/1024).toFixed(2)} MB</div>
+        <button onclick="document.getElementById('viewerDownload').click()" style="padding:10px 20px;background:var(--teal);border:none;border-radius:8px;color:var(--bg);font-weight:700;cursor:pointer">↓ Download to Open</button>
+      </div>`;
+    }
+  }catch(e){
+    body.innerHTML=`<div style="padding:20px;color:var(--red);text-align:center">Error loading file.</div>`;
+  }
+}
+
+document.getElementById('viewerClose')?.addEventListener('click',()=>{
+  document.getElementById('viewerOverlay').classList.remove('open');
+  document.getElementById('viewerBody').innerHTML='';
+});
+document.getElementById('viewerOverlay')?.addEventListener('click',e=>{
+  if(e.target===e.currentTarget){
+    document.getElementById('viewerOverlay').classList.remove('open');
+    document.getElementById('viewerBody').innerHTML='';
+  }
+});
+
+// ── Delete material ───────────────────────────────────────────────────────────
+window.deleteMat = function(id){
+  const m=matMeta.find(m=>m.id===id);
+  confirm_('Delete Material',`Remove "${m?.title}"?`,async()=>{
+    if(m?.hasFile) await dbDelFile(id).catch(()=>{});
+    matMeta=matMeta.filter(m=>m.id!==id);
+    saveMatMeta();
+    renderMaterials();
+    toast('Material removed','🗑️');
+  });
+};
+
+// ─── FAB ─────────────────────────────────────────────────────────────────────
+document.getElementById('fab').addEventListener('click',()=>{
+  if(activeView==='deadlines')   openAddDl();
+  else if(activeView==='materials') openUploadModal();
+  else if(activeView==='courses')   openAddCourse();
+  else if(activeView==='study')     openAddStudy();
+  else openAddClass();
+});
+document.getElementById('addDlBtn')?.addEventListener('click',openAddDl);
+
+// ─── KEYBOARD ─────────────────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    closeClassModal(); closeDlModal(); closeSettings();
+    ['confirmOverlay','courseOverlay','studyOverlay','examOverlay','noteOverlay','courseDetailOverlay'].forEach(id=>{
+      document.getElementById(id)?.classList.remove('open');
+    });
+  }
+  // ⌘K / Ctrl+K — focus global search
+  if((e.ctrlKey||e.metaKey)&&e.key==='k'){
+    e.preventDefault();
+    const gs=document.getElementById('globalSearch');
+    gs.focus(); gs.select();
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key==='n'){ e.preventDefault(); openAddClass(); }
+});
+
+// ─── STATS (v4 — includes study hours) ───────────────────────────────────────
+function updateStats(){
+  const today=todayName();
+  const todayClasses=state.classes.filter(c=>c.day===today);
+  const attended=todayClasses.filter(c=>isAttended(c)).length;
+  const now=new Date();
+  const dueSoon=state.deadlines.filter(d=>{
+    if(d.completed)return false;
+    const due=new Date(d.date+'T'+(d.time||'23:59'));
+    return (due-now)/(1000*60*60)<72&&due>now;
+  }).length + state.exams.filter(e=>{
+    const due=new Date(e.examAt);
+    return (due-now)/86400000<3 && due>now;
+  }).length;
+
+  // study hours this week
+  const weekStart=new Date(); weekStart.setDate(weekStart.getDate()-weekStart.getDay());
+  weekStart.setHours(0,0,0,0);
+  const weekMins=state.studySessions.filter(s=>new Date(s.date)>=weekStart)
+    .reduce((a,s)=>a+(s.actualMins||0),0);
+  const weekHrs=weekMins>=60?Math.round(weekMins/60*10)/10+'h':weekMins+'m';
+
+  document.getElementById('sTotalClasses').textContent=state.classes.length;
+  document.getElementById('sAttendedToday').textContent=attended;
+  document.getElementById('sDueSoon').textContent=dueSoon;
+  const studyEl=document.getElementById('sStudyHrs');
+  if(studyEl)studyEl.textContent=weekHrs||'0m';
+
+  const pending=state.deadlines.filter(d=>!d.completed).length+state.exams.length;
+  const badge=document.getElementById('dlBadge');
+  if(badge){badge.textContent=pending;badge.classList.toggle('show',pending>0);}
+  const dlCount=document.getElementById('dlCount');
+  if(dlCount)dlCount.textContent=pending>0?`(${pending} open)`:'';
+  updateMatBadge();
+}
+
+// ─── RENDER ALL (v4) ─────────────────────────────────────────────────────────
+function renderAll(){
+  updateGreeting();
+  renderDayStrip();
+  renderClasses();
+  populateCourseDropdowns();
+  if(activeView==='courses')    renderCourses();
+  if(activeView==='study')      renderStudySessions();
+  if(activeView==='deadlines')  renderCombinedTasks();
+  if(activeView==='materials')  renderMaterials();
+  if(activeView==='more'){
+    switchMoreSub(activeMoreSub);
+  }
+  updateWidget();
+  updateStats();
+  notifyBtn.classList.toggle('active',!!state.settings.reminders);
+}
+
+// ─── RESET (v4 — clears all new arrays) ──────────────────────────────────────
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  confirm_('Reset All Data','This will erase everything — schedule, courses, deadlines, exams, study sessions, notes, and all uploaded materials. Back up first. Cannot be undone.', async ()=>{
+    for(const m of matMeta){ if(m.hasFile) await dbDelFile(m.id).catch(()=>{}); }
+    matMeta=[];
+    saveMatMeta();
+    state={
+      classes:[...DEFAULT_CLASSES], courses:[...DEFAULT_COURSES],
+      deadlines:[], exams:[], studySessions:[], classNotes:[],
+      settings:state.settings, attendance:{}
+    };
+    save(); renderAll();
+    if(activeView==='materials') renderMaterials();
+    toast('Data reset');
+  });
+});
+
+// ─── ACCESSIBILITY: focus trap + restore for all overlay modals ──────────────
+(function setupModalA11y(){
+  let lastFocused = null;
+
+  function focusableIn(container){
+    return [...container.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )].filter(el=>!el.disabled && el.offsetParent!==null);
+  }
+
+  document.querySelectorAll('.overlay').forEach(overlay=>{
+    const observer = new MutationObserver(()=>{
+      const isOpen = overlay.classList.contains('open');
+      if(isOpen){
+        lastFocused = document.activeElement;
+        const focusables = focusableIn(overlay);
+        if(focusables.length) focusables[0].focus();
+
+        overlay._trapHandler = function(e){
+          if(e.key!=='Tab') return;
+          const items = focusableIn(overlay);
+          if(!items.length) return;
+          const first=items[0], last=items[items.length-1];
+          if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+          else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+        };
+        overlay.addEventListener('keydown', overlay._trapHandler);
+      } else {
+        if(overlay._trapHandler) overlay.removeEventListener('keydown', overlay._trapHandler);
+        if(lastFocused && document.body.contains(lastFocused)) lastFocused.focus();
+      }
+    });
+    observer.observe(overlay, {attributes:true, attributeFilter:['class']});
+  });
+})();
+
+// Keep aria-checked in sync with the visual .on state on every toggle switch
+function syncToggleAria(btn){ btn.setAttribute('aria-checked', btn.classList.contains('on')?'true':'false'); }
+['toggleReminders','toggleDlReminders','toggleCompact'].forEach(id=>{
+  const btn=document.getElementById(id);
+  if(btn){
+    const obs=new MutationObserver(()=>syncToggleAria(btn));
+    obs.observe(btn,{attributes:true, attributeFilter:['class']});
+  }
+});
+
+// ─── ONBOARDING ────────────────────────────────────────────────────────────────
+const ONBOARDED_KEY = 'classtrack_onboarded';
+
+function isOnboarded(){
+  return !!localStorage.getItem(ONBOARDED_KEY);
+}
+
+function showOnboarding(){
+  document.getElementById('onboardingOverlay').style.display = 'flex';
+  setTimeout(()=>document.getElementById('ob-name').focus(), 100);
+}
+
+function hideOnboarding(){
+  document.getElementById('onboardingOverlay').style.display = 'none';
+}
+
+// Keep the radio selection visually highlighted
+document.querySelectorAll('input[name="ob-data"]').forEach(r=>{
+  r.addEventListener('change',()=>{
+    document.getElementById('obChoiceBlank').classList.toggle('ob-choice-selected', r.value==='blank'&&r.checked);
+    document.getElementById('obChoiceSample').classList.toggle('ob-choice-selected', r.value==='sample'&&r.checked);
+  });
+});
+
+document.getElementById('obBeginBtn').addEventListener('click',()=>{
+  const name = document.getElementById('ob-name').value.trim();
+  if(!name){ document.getElementById('err-ob-name').classList.add('show'); document.getElementById('ob-name').focus(); return; }
+
+  state.settings.name        = name;
+  state.settings.institution = document.getElementById('ob-institution').value.trim();
+  state.settings.programme   = document.getElementById('ob-programme').value.trim();
+
+  const choice = document.querySelector('input[name="ob-data"]:checked')?.value || 'sample';
+  if(choice === 'blank'){
+    state.classes  = [];
+    state.courses  = [];
+    state.deadlines= [];
+    state.exams    = [];
+    state.studySessions = [];
+    state.classNotes    = [];
+    state.attendance    = {};
+  } else {
+    // Sample data stays — but neutralise the specific moved-class note
+    // that's personal to Kevin; other fields are genuine examples
+    state.classes = state.classes.map(c=>({...c}));
+    state.courses = state.courses.map(c=>({...c}));
+  }
+
+  save();
+  localStorage.setItem(ONBOARDED_KEY, '1');
+  hideOnboarding();
+  populateCourseDropdowns();
+  renderAll();
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+load();
+loadMatMeta();
+updateMatBadge();
+activeDay = todayName();
+populateCourseDropdowns();
+
+if(!isOnboarded()){
+  // Show onboarding first — do NOT renderAll yet, the app shell stays hidden
+  showOnboarding();
+} else {
+  renderAll();
+  checkNotifications();
+}
+
+setInterval(updateWidget, 60000);
+setInterval(checkNotifications, 30000);
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='visible'){ updateWidget(); checkNotifications(); }
+});
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+# ClassTrack — Netlify configuration
+# Drop this file in the root of your repository alongside index.html
+
+[build]
+  publish = "."
+
+# ── Security + SW headers (applied to every response) ──────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Prevent clickjacking
+    X-Frame-Options = "DENY"
+    # Stop MIME-type sniffing
+    X-Content-Type-Options = "nosniff"
+    # Referrer — don't leak URL to third parties
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # Minimal permissions — this app needs no camera, mic, geolocation, etc.
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    # Content Security Policy
+    # - default-src self: everything must come from the same origin
+    # - script-src: allows the JSZip CDN (needed for backup/restore only)
+    # - style-src: allows Google Fonts CSS
+    # - font-src: allows Google Fonts files
+    # - connect-src: allows Google Fonts and the Anthropic API (not used in this build but safe to leave for future)
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; worker-src 'self';"
+    # Allow the service worker to control the full origin
+    Service-Worker-Allowed = "/"
+
+# ── Aggressive caching for static assets ───────────────────────────────────────
+[[headers]]
+  for = "/icon-*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# ── Service worker must NEVER be cached ────────────────────────────────────────
+# If it were cached, users would be stuck on stale app shells indefinitely
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+# ── SPA routing: all paths resolve to index.html ───────────────────────────────
+# Not strictly needed for a single-page app with no client-side routing,
+# but prevents 404s on direct nav or refresh if you add routes later.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
