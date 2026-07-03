@@ -63,7 +63,7 @@ body {
 ::-webkit-scrollbar-thumb { background:var(--surface-3); border-radius:4px; }
 
 /* ── LAYOUT ── */
-.wrap { max-width: 620px; margin:0 auto; padding:20px 16px 110px; position:relative; z-index:1; }
+.wrap { max-width: 620px; margin:0 auto; padding:20px 16px 110px; position:relative; isolation:isolate; }
 
 /* ── HEADER ── */
 .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
@@ -301,7 +301,7 @@ body {
   background:var(--teal); border:none; color:var(--bg); font-size:1.6rem;
   display:flex; align-items:center; justify-content:center;
   cursor:pointer; box-shadow:0 6px 20px var(--teal-glow);
-  transition:all .2s var(--ease); z-index:50;
+  transition:all .2s var(--ease); z-index:150; pointer-events:auto;
 }
 .fab:hover { transform:scale(1.06); box-shadow:0 8px 28px var(--teal-glow); }
 .fab:active { transform:scale(.94); }
@@ -3417,7 +3417,11 @@ function showOnboarding(){
 }
 
 function hideOnboarding(){
-  document.getElementById('onboardingOverlay').style.display = 'none';
+  const el = document.getElementById('onboardingOverlay');
+  el.style.display = 'none';
+  el.style.pointerEvents = 'none';
+  el.setAttribute('aria-hidden','true');
+  el.setAttribute('inert','');
 }
 
 // Keep the radio selection visually highlighted
@@ -3467,9 +3471,13 @@ activeDay = todayName();
 populateCourseDropdowns();
 
 if(!isOnboarded()){
-  // Show onboarding first — do NOT renderAll yet, the app shell stays hidden
   showOnboarding();
 } else {
+  // make overlay fully inert so it can never intercept clicks
+  const ob = document.getElementById('onboardingOverlay');
+  ob.style.display='none';
+  ob.style.pointerEvents='none';
+  ob.setAttribute('inert','');
   renderAll();
   checkNotifications();
 }
